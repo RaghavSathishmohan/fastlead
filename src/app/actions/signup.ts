@@ -68,7 +68,7 @@ export async function signupClient(
 <p>Your LeadFast account for <strong>${company_name}</strong> is live.</p>
 <p><a href="${dashboardUrl}" style="color:#ef4444;font-weight:bold;">Open Your Dashboard</a></p>
 <p>Save this link — it is your private portal to view and manage every lead.</p>
-<p>Questions? Reply to this email.</p>`
+<p><em>This email is not monitored. Questions? Reach out to Raghav Sathishmohan at raghavsathishmohan@gmail.com or +1 732-447-6474.</em></p>`
         })
       });
     } catch {
