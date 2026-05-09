@@ -1,4 +1,4 @@
-# FastLead
+# LeadFast
 
 AI-powered construction lead response system. Instantly captures, parses, and responds to construction leads via email with a live mobile dashboard.
 

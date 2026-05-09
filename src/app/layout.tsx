@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'FastLead - AI Lead Response',
+  title: 'LeadFast - AI Lead Response',
   description: 'Instant AI-powered lead response for construction businesses'
 };
 

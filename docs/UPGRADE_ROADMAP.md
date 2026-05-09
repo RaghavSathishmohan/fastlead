@@ -1,4 +1,4 @@
-# FastLead Upgrade Roadmap
+# LeadFast Upgrade Roadmap
 
 ## Phase 2: SMS Alerts ($20/mo additional)
 

@@ -1,4 +1,4 @@
--- FastLead Supabase Schema
+-- LeadFast Supabase Schema
 -- Run this in Supabase SQL Editor
 
 -- Enable UUID extension

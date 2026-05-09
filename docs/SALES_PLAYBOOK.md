@@ -1,4 +1,4 @@
-# FastLead Sales Playbook
+# LeadFast Sales Playbook
 
 ## Target Customer
 Solo and small construction trades: roofers, electricians, HVAC, plumbers, painters, general contractors doing $200K-$2M/year revenue.
@@ -11,7 +11,7 @@ Solo and small construction trades: roofers, electricians, HVAC, plumbers, paint
 ## Cold Call Script
 
 ```
-Hi [NAME], this is [YOUR NAME] from FastLead.
+Hi [NAME], this is [YOUR NAME] from LeadFast.
 
 Quick question — when someone fills out a form on your website or emails you for a quote,
 how fast do you typically get back to them?
@@ -26,7 +26,7 @@ and tracks everything in a mobile dashboard. Would you be open to seeing how it 
 
 ## Pricing
 - **Beta:** $197/month (lock-in forever price)
-- **Value prop:** "One lost $5,000 roofing job pays for 2 years of FastLead"
+- **Value prop:** "One lost $5,000 roofing job pays for 2 years of LeadFast"
 - **Trial:** 7-day free trial, no credit card
 
 ## Objection Handling
@@ -38,7 +38,7 @@ and tracks everything in a mobile dashboard. Would you be open to seeing how it 
 > How much is one average job worth to you? $3,000? $5,000? If we help you close just one extra lead this year, you've paid for the whole service.
 
 **"I don't have a website"**
-> We actually have a package for that. We can build you a simple lead-capture site that feeds directly into FastLead.
+> We actually have a package for that. We can build you a simple lead-capture site that feeds directly into LeadFast.
 
 ## Demo Strategy
 1. Create a demo client in the system

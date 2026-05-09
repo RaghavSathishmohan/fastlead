@@ -1,4 +1,4 @@
-# FastLead Monitoring SOP
+# LeadFast Monitoring SOP
 
 ## Weekly Audit Checklist
 

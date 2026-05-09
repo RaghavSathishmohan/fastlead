@@ -1,6 +1,6 @@
 {
-  "name": "FastLead Dashboard",
-  "short_name": "FastLead",
+  "name": "LeadFast Dashboard",
+  "short_name": "LeadFast",
   "description": "AI-powered lead response dashboard",
   "start_url": "/",
   "display": "standalone",

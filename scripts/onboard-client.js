@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * FastLead Client Onboarding Script
+ * LeadFast Client Onboarding Script
  * Usage: node scripts/onboard-client.js "John Doe" "john@example.com" "Acme Roofing" "(555) 123-4567"
  */
 
@@ -33,7 +33,7 @@ async function onboardClient(name, email, company, phone) {
   console.log('Dashboard:', `https://app.leadfast.raghavsathishmohan.com/d/${data.token}`);
   console.log('Webhook:', `https://n8n.leadfast.raghavsathishmohan.com/webhook/lead-capture`);
   console.log('\nSend this to the client:\n');
-  console.log(`Hi ${name}, your FastLead dashboard is live at:`);
+  console.log(`Hi ${name}, your LeadFast dashboard is live at:`);
   console.log(`https://app.leadfast.raghavsathishmohan.com/d/${data.token}`);
   console.log('\nAdd this webhook URL to your website form action:');
   console.log(`https://n8n.leadfast.raghavsathishmohan.com/webhook/lead-capture`);

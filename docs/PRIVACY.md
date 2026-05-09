@@ -1,8 +1,8 @@
-# FastLead Privacy Policy
+# LeadFast Privacy Policy
 
 ## Data Collection
 
-FastLead collects only the information necessary to route leads to construction businesses:
+LeadFast collects only the information necessary to route leads to construction businesses:
 - Lead name, phone, email, service request, city
 - Business owner contact information
 - Timestamps of lead interactions

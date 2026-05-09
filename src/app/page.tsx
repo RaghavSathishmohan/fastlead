@@ -7,7 +7,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Zap className="w-6 h-6 text-brand-500" />
-            <span className="font-bold text-lg">FastLead</span>
+            <span className="font-bold text-lg">LeadFast</span>
           </div>
           <a
             href="#pricing"
@@ -53,7 +53,7 @@ export default function LandingPage() {
               {
                 icon: Mail,
                 title: 'Lead Arrives',
-                desc: 'A prospect fills out your form or sends an email. FastLead captures it instantly.'
+                desc: 'A prospect fills out your form or sends an email. LeadFast captures it instantly.'
               },
               {
                 icon: Zap,
@@ -147,7 +147,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-4 py-8 flex items-center justify-between text-sm text-[var(--color-muted)]">
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4" />
-            <span>FastLead</span>
+            <span>LeadFast</span>
           </div>
           <div className="flex gap-4">
             <a href="#" className="hover:text-white transition-colors">Privacy</a>

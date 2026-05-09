@@ -1,5 +1,5 @@
 {
-  "name": "FastLead Master Workflow",
+  "name": "LeadFast Master Workflow",
   "nodes": [
     {
       "parameters": {
@@ -87,7 +87,7 @@
     },
     {
       "parameters": {
-        "from": "FastLead <alerts@leadfast.raghavsathishmohan.com>",
+        "from": "LeadFast <alerts@leadfast.raghavsathishmohan.com>",
         "to": "={{ $json.owner_email }}",
         "subject": "🔥 NEW LEAD: {{ $json.name }} - {{ $json.service }} ({{ $json.urgency }})",
         "text": "=NEW LEAD RECEIVED\\n\\nName: {{ $json.name }}\\nPhone: {{ $json.phone }}\\nEmail: {{ $json.email }}\\nService: {{ $json.service }}\\nCity: {{ $json.city }}\\nUrgency: {{ $json.urgency }}\\n\\nView in dashboard: https://app.leadfast.raghavsathishmohan.com/d/{{ $json.token }}"

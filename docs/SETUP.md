@@ -1,4 +1,4 @@
-# FastLead Setup Guide
+# LeadFast Setup Guide
 
 ## Quick Start
 
@@ -36,16 +36,16 @@ Add to any website form:
 
 ### Option B: No Website (Email Forwarding)
 
-1. Create a Gmail filter to forward lead emails to your FastLead email alias
+1. Create a Gmail filter to forward lead emails to your LeadFast email alias
 2. Or: Set up IMAP in n8n to watch the client's inbox directly
 
 ### WordPress Integration
 
-Use Contact Form 7 or WPForms with webhook add-on pointing to the FastLead webhook URL.
+Use Contact Form 7 or WPForms with webhook add-on pointing to the LeadFast webhook URL.
 
 ### Wix / Webflow
 
-Use native form → webhook/Zapier → FastLead webhook URL.
+Use native form → webhook/Zapier → LeadFast webhook URL.
 
 ## Running the Onboarding Script
 

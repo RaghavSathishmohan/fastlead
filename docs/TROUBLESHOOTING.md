@@ -1,4 +1,4 @@
-# FastLead Troubleshooting
+# LeadFast Troubleshooting
 
 ## n8n Issues
 
