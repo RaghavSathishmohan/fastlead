@@ -1,6 +1,14 @@
-import { Zap, Clock, Mail, Shield, ArrowRight, CheckCircle } from 'lucide-react';
+'use client';
+
+import { useFormState } from 'react-dom';
+import { signupClient, SignupResult } from '@/app/actions/signup';
+import { Zap, Clock, Mail, Shield, ArrowRight, CheckCircle, ExternalLink } from 'lucide-react';
+
+const initialState: SignupResult = { success: false, message: '' };
 
 export default function LandingPage() {
+  const [state, formAction] = useFormState(signupClient, initialState);
+
   return (
     <div className="min-h-dvh">
       <header className="border-b border-[var(--color-border)]">
@@ -108,38 +116,79 @@ export default function LandingPage() {
 
         <section id="contact" className="space-y-8">
           <h2 className="text-2xl font-bold text-center">Get Started</h2>
-          <form className="max-w-md mx-auto space-y-4">
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Company Name</label>
-              <input
-                type="text"
-                className="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 transition-colors"
-                placeholder="Your Construction Company"
-              />
+          {state.success ? (
+            <div className="max-w-md mx-auto bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-6 space-y-4 text-center">
+              <CheckCircle className="w-10 h-10 text-green-400 mx-auto" />
+              <h3 className="font-semibold text-lg">Welcome to LeadFast</h3>
+              <p className="text-[var(--color-muted)]">{state.message}</p>
+              {state.dashboardUrl && (
+                <a
+                  href={state.dashboardUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-brand-500 hover:text-brand-400 font-medium"
+                >
+                  Open Your Dashboard
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              )}
             </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Email</label>
-              <input
-                type="email"
-                className="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 transition-colors"
-                placeholder="you@company.com"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Phone</label>
-              <input
-                type="tel"
-                className="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 transition-colors"
-                placeholder="(555) 123-4567"
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-brand-600 hover:bg-brand-500 text-white rounded-xl py-3 font-medium transition-colors"
-            >
-              Request Access
-            </button>
-          </form>
+          ) : (
+            <form action={formAction} className="max-w-md mx-auto space-y-4">
+              <div className="space-y-1">
+                <label htmlFor="company" className="text-sm font-medium">Company Name</label>
+                <input
+                  id="company"
+                  name="company"
+                  type="text"
+                  required
+                  className="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 transition-colors"
+                  placeholder="Your Construction Company"
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="name" className="text-sm font-medium">Your Name</label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required
+                  className="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 transition-colors"
+                  placeholder="John Doe"
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="email" className="text-sm font-medium">Email</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  className="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 transition-colors"
+                  placeholder="you@company.com"
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="phone" className="text-sm font-medium">Phone</label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  className="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 transition-colors"
+                  placeholder="(555) 123-4567"
+                />
+              </div>
+              {state.message && (
+                <p className="text-sm text-red-400">{state.message}</p>
+              )}
+              <button
+                type="submit"
+                className="w-full bg-brand-600 hover:bg-brand-500 text-white rounded-xl py-3 font-medium transition-colors"
+              >
+                Create Account
+              </button>
+            </form>
+          )}
         </section>
       </main>
 

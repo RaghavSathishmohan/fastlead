@@ -7,6 +7,7 @@ export interface Client {
   company_name: string;
   alert_email: boolean;
   alert_sms: boolean;
+  status: 'pending' | 'active' | 'paused';
   created_at: string;
 }
 
