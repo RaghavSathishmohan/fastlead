@@ -44,3 +44,38 @@ export async function authenticateAdmin(
     clients: (data || []) as Client[]
   };
 }
+
+export async function deleteClient(_prevState: AdminResult, formData: FormData): Promise<AdminResult> {
+  const password = formData.get('password') as string;
+  const clientId = formData.get('clientId') as string;
+
+  if (!adminPassword || password !== adminPassword) {
+    return { success: false, message: 'Unauthorized.' };
+  }
+
+  if (!clientId) {
+    return { success: false, message: 'Client ID is required.' };
+  }
+
+  const { error } = await supabase.from('clients').delete().eq('id', clientId);
+
+  if (error) {
+    return { success: false, message: `Failed to delete: ${error.message}` };
+  }
+
+  // Re-fetch clients after delete
+  const { data, error: fetchError } = await supabase
+    .from('clients')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (fetchError) {
+    return { success: false, message: `Deleted but failed to reload: ${fetchError.message}` };
+  }
+
+  return {
+    success: true,
+    message: 'Client deleted.',
+    clients: (data || []) as Client[]
+  };
+}
