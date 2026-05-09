@@ -3,7 +3,7 @@
 import { useFormState } from 'react-dom';
 import { authenticateAdmin, deleteClient, AdminResult } from '@/app/actions/admin';
 import { Shield, ExternalLink, Copy, CheckCircle, Trash2, AlertTriangle } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const initialState: AdminResult = { success: false, message: '' };
 
@@ -52,19 +52,21 @@ export default function AdminPage() {
   const [authState, authAction] = useFormState(authenticateAdmin, initialState);
   const [deleteState, deleteAction] = useFormState(deleteClient, initialState);
 
-  const [clients, setClients] = useState<AdminResult['clients']>(authState.clients);
+  const [clients, setClients] = useState<AdminResult['clients']>([]);
   const [password, setPassword] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
 
-  // Keep local clients in sync when auth loads
-  if (authState.success && authState.clients && authState.clients !== clients) {
-    setClients(authState.clients);
-  }
+  useEffect(() => {
+    if (authState.success && authState.clients) {
+      setClients(authState.clients);
+    }
+  }, [authState.success, authState.clients]);
 
-  // Keep local clients in sync after delete
-  if (deleteState.success && deleteState.clients && deleteState.clients !== clients) {
-    setClients(deleteState.clients);
-  }
+  useEffect(() => {
+    if (deleteState.success && deleteState.clients) {
+      setClients(deleteState.clients);
+    }
+  }, [deleteState.success, deleteState.clients]);
 
   const handleDelete = (clientId: string) => {
     const formData = new FormData();
