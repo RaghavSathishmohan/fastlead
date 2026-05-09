@@ -1,12 +1,44 @@
 import { notFound } from 'next/navigation';
-import { getClientByToken, getLeadsByClient } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { LeadList } from '@/components/dashboard/LeadList';
 import { Phone, Mail, Building2, Zap } from 'lucide-react';
+import { Client, Lead } from '@/lib/types';
+
+const supabaseUrl = process.env.SUPABASE_URL!;
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 export const revalidate = 0;
 
 interface DashboardPageProps {
   params: { token: string };
+}
+
+async function getClientByToken(token: string): Promise<Client | null> {
+  const supabase = createClient(supabaseUrl, serviceKey);
+  const { data, error } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('token', token)
+    .single();
+
+  if (error || !data) return null;
+  return data as Client;
+}
+
+async function getLeadsByClient(clientId: string): Promise<Lead[]> {
+  const supabase = createClient(supabaseUrl, serviceKey);
+  const { data, error } = await supabase
+    .from('leads')
+    .select('*')
+    .eq('client_id', clientId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching leads:', error);
+    return [];
+  }
+
+  return (data || []) as Lead[];
 }
 
 export default async function DashboardPage({ params }: DashboardPageProps) {
