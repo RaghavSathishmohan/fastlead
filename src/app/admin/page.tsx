@@ -53,6 +53,7 @@ export default function AdminPage() {
   const [deleteState, deleteAction] = useFormState(deleteClient, initialState);
 
   const [clients, setClients] = useState<AdminResult['clients']>(authState.clients);
+  const [password, setPassword] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
 
   // Keep local clients in sync when auth loads
@@ -66,22 +67,10 @@ export default function AdminPage() {
   }
 
   const handleDelete = (clientId: string) => {
-    const form = document.createElement('form');
-    const passwordInput = document.createElement('input');
-    passwordInput.name = 'password';
-    passwordInput.type = 'hidden';
-    passwordInput.value = (document.querySelector('input[name="adminPassword"]') as HTMLInputElement)?.value || '';
-    form.appendChild(passwordInput);
-
-    const idInput = document.createElement('input');
-    idInput.name = 'clientId';
-    idInput.type = 'hidden';
-    idInput.value = clientId;
-    form.appendChild(idInput);
-
-    document.body.appendChild(form);
-    deleteAction(new FormData(form));
-    document.body.removeChild(form);
+    const formData = new FormData();
+    formData.append('password', password);
+    formData.append('clientId', clientId);
+    deleteAction(formData);
     setDeleteConfirm(null);
   };
 
@@ -104,6 +93,8 @@ export default function AdminPage() {
                 type="password"
                 name="password"
                 required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 transition-colors"
                 placeholder="Enter admin password"
               />
@@ -125,17 +116,11 @@ export default function AdminPage() {
               <span className="text-sm text-[var(--color-muted)]">{clients?.length || 0} total</span>
             </div>
 
-            {deleteState.message && !deleteState.success && (
-              <p className="text-sm text-red-400">{deleteState.message}</p>
+            {deleteState.message && (
+              <p className={deleteState.success ? 'text-sm text-green-400' : 'text-sm text-red-400'}>
+                {deleteState.message}
+              </p>
             )}
-
-            {/* Hidden password store for delete actions */}
-            <input
-              type="hidden"
-              name="adminPassword"
-              value={(document.querySelector('input[name="password"]') as HTMLInputElement)?.value || ''}
-              readOnly
-            />
 
             {clients && clients.length > 0 ? (
               <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl">
