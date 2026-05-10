@@ -22,17 +22,36 @@
     },
     {
       "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT cleanup_old_leads();"
+        "method": "POST",
+        "url": "https://qzkpdwvrrnychbmmwazf.supabase.co/rest/v1/rpc/cleanup_old_leads",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6a3Bkd3Zycm55Y2hibW13YXpmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODE5OTgyNiwiZXhwIjoyMDkzNzc1ODI2fQ.U-Cxz65oNc9-GMax91BGxW7apKI5uizQRTm7uFcrThs" },
+            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6a3Bkd3Zycm55Y2hibW13YXpmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODE5OTgyNiwiZXhwIjoyMDkzNzc1ODI2fQ.U-Cxz65oNc9-GMax91BGxW7apKI5uizQRTm7uFcrThs" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "{\"dummy\": true}"
       },
-      "id": "cleanup-query",
+      "id": "cleanup-rpc",
       "name": "Delete Old Leads",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.3,
-      "position": [460, 300],
-      "credentials": {
-        "postgres": "supabase-postgres"
-      }
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const result = $input.first().json;\nconst deleted = result || 0;\nreturn [{ json: { deleted_count: deleted, timestamp: new Date().toISOString(), status: 'success' } }];"
+      },
+      "id": "cleanup-log",
+      "name": "Log Cleanup",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
     }
   ],
   "connections": {
@@ -41,6 +60,17 @@
         [
           {
             "node": "Delete Old Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Old Leads": {
+      "main": [
+        [
+          {
+            "node": "Log Cleanup",
             "type": "main",
             "index": 0
           }
