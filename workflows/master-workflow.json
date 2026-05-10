@@ -62,7 +62,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const client = $input.first().json[0];\nconst extracted = $input.all()[0].json;\n\nif (!client) {\n  return [{ json: { error: 'Client not found for token: ' + extracted.token } }];\n}\n\nreturn [{\n  json: {\n    client_id: client.id,\n    owner_email: client.owner_email,\n    company_name: client.company_name,\n    token: client.token,\n    rawText: extracted.rawText\n  }\n}];"
+        "jsCode": "const response = $('Fetch Client by Token').first().json;\nconst client = Array.isArray(response) && response.length > 0 ? response[0] : (response && response.id ? response : null);\nconst extracted = $('Extract Token + Text').first().json;\n\nif (!client) {\n  return [{ json: { error: 'Client not found for token: ' + extracted.token } }];\n}\n\nreturn [{\n  json: {\n    client_id: client.id,\n    owner_email: client.owner_email,\n    company_name: client.company_name,\n    token: client.token,\n    rawText: extracted.rawText\n  }\n}];"
       },
       "id": "enrich-client",
       "name": "Enrich with Client Data",
@@ -115,7 +115,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nconst parsed = JSON.parse(data.geminiResponse || '{}');\n\nlet lead = {};\ntry {\n  const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\n  lead = JSON.parse(text);\n} catch (e) {\n  const text = JSON.stringify(parsed);\n  lead = {\n    name: text.match(/Name:\\\\s*([^\\\\n]+)/)?.[1]?.trim() || text.match(/([A-Z][a-z]+\\\\s+[A-Z][a-z]+)/)?.[1] || null,\n    phone: text.match(/(1?[-\\\\s.]?(\\\\([0-9]{3}\\\\)|[0-9]{3})[-\\\\s.]?[0-9]{3}[-\\\\s.]?[0-9]{4})/)?.[1] || null,\n    email: text.match(/([\\\\w.-]+@[\\\\w.-]+\\\\.[\\\\w]+)/)?.[1] || null,\n    service: text.match(/Service:\\\\s*([^\\\\n]+)/)?.[1]?.trim() || null,\n    city: text.match(/City:\\\\s*([^\\\\n]+)/)?.[1]?.trim() || null,\n    urgency: text.match(/Urgency:\\\\s*([^\\\\n]+)/)?.[1]?.trim()?.toLowerCase() || 'medium'\n  };\n}\n\nconst phoneRegex = /^1?[-\\\\s.]?(\\\\([0-9]{3}\\\\)|[0-9]{3})[-\\\\s.]?[0-9]{3}[-\\\\s.]?[0-9]{4}$/;\nconst emailRegex = /^[^\\\\s]+@[^\\\\s]+\\\\.[^\\\\s]+$/;\n\n// Get client data from webhook trigger\nconst webhookData = $('Webhook Trigger').first().json;\nconst body = webhookData.body || webhookData;\n\n// Fetch client by token again since we can't pass data through HTTP Request\n// For now, use hardcoded test client to get the workflow working\nconst validated = {\n  client_id: '8e2a67fc-a9ba-41b4-92be-12da261cdbd5',\n  owner_email: 'raghavsathishmohan@gmail.com',\n  company_name: 'Raghav & Co',\n  token: '08bea42c-506d-45f8-a0c4-4b5679204027',\n  name: lead.name || 'Unknown',\n  phone: phoneRegex.test(lead.phone) ? lead.phone : null,\n  email: emailRegex.test(lead.email) ? lead.email : null,\n  service: lead.service || 'General Inquiry',\n  city: lead.city || 'Unknown',\n  urgency: ['low','medium','high'].includes(lead.urgency) ? lead.urgency : 'medium',\n  raw_input: typeof body === 'string' ? body : body.body || JSON.stringify(body)\n};\n\nreturn [{ json: validated }];"
+        "jsCode": "const data = $input.first().json;\nconst parsed = JSON.parse(data.geminiResponse || '{}');\n\nlet lead = {};\ntry {\n  const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\n  lead = JSON.parse(text);\n} catch (e) {\n  const text = JSON.stringify(parsed);\n  lead = {\n    name: text.match(/Name:\\\\s*([^\\\\n]+)/)?.[1]?.trim() || text.match(/([A-Z][a-z]+\\\\s+[A-Z][a-z]+)/)?.[1] || null,\n    phone: text.match(/(1?[-\\\\s.]?(\\\\([0-9]{3}\\\\)|[0-9]{3})[-\\\\s.]?[0-9]{3}[-\\\\s.]?[0-9]{4})/)?.[1] || null,\n    email: text.match(/([\\\\w.-]+@[\\\\w.-]+\\\\.[\\\\w]+)/)?.[1] || null,\n    service: text.match(/Service:\\\\s*([^\\\\n]+)/)?.[1]?.trim() || null,\n    city: text.match(/City:\\\\s*([^\\\\n]+)/)?.[1]?.trim() || null,\n    urgency: text.match(/Urgency:\\\\s*([^\\\\n]+)/)?.[1]?.trim()?.toLowerCase() || 'medium'\n  };\n}\n\nconst phoneRegex = /^1?[-\\\\s.]?(\\\\([0-9]{3}\\\\)|[0-9]{3})[-\\\\s.]?[0-9]{3}[-\\\\s.]?[0-9]{4}$/;\nconst emailRegex = /^[^\\\\s]+@[^\\\\s]+\\\\.[^\\\\s]+$/;\n\n// Pull client data from the upstream Enrich node\nconst client = $('Enrich with Client Data').first().json;\n\nconst validated = {\n  client_id: client.client_id,\n  owner_email: client.owner_email,\n  company_name: client.company_name,\n  token: client.token,\n  name: lead.name || 'Unknown',\n  phone: phoneRegex.test(lead.phone) ? lead.phone : null,\n  email: emailRegex.test(lead.email) ? lead.email : null,\n  service: lead.service || 'General Inquiry',\n  city: lead.city || 'Unknown',\n  urgency: ['low','medium','high'].includes(lead.urgency) ? lead.urgency : 'medium',\n  raw_input: client.rawText\n};\n\nreturn [{ json: validated }];"
       },
       "id": "validate-lead",
       "name": "Validate Lead",
@@ -167,20 +167,38 @@
     },
     {
       "parameters": {
+        "jsCode": "const lead = $('Validate Lead').first().json;\nconst baseUrl = 'https://app.leadfast.raghavsathishmohan.com';\n\nconst ownerAlertBody = JSON.stringify({\n  from: 'LeadFast <alerts@leadfast.raghavsathishmohan.com>',\n  to: lead.owner_email,\n  subject: `NEW LEAD: ${lead.name} - ${lead.service} (${lead.urgency})`,\n  text: `NEW LEAD RECEIVED\\n\\nName: ${lead.name}\\nPhone: ${lead.phone || 'N/A'}\\nEmail: ${lead.email || 'N/A'}\\nService: ${lead.service}\\nCity: ${lead.city}\\nUrgency: ${lead.urgency}\\n\\nView in dashboard: ${baseUrl}/d/${lead.token}`\n});\n\nconst autoReplyBody = JSON.stringify({\n  from: `${lead.company_name} <alerts@leadfast.raghavsathishmohan.com>`,\n  to: lead.email,\n  subject: `Thanks for reaching out to ${lead.company_name}`,\n  text: `Hi ${lead.name},\\n\\nThank you for contacting ${lead.company_name}. We have received your request for ${lead.service} and will be in touch shortly.\\n\\nIf this is urgent, please call us directly.\\n\\nBest,\\n${lead.company_name} Team\\n\\nThis email is not monitored. Questions? Reach out to Raghav Sathishmohan at raghavsathishmohan@gmail.com or +1 732-447-6474.`\n});\n\nreturn [{ json: { ownerAlertBody, autoReplyBody } }];"
+      },
+      "id": "build-emails",
+      "name": "Build Email Bodies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1900,
+        300
+      ]
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "https://api.resend.com/emails",
         "sendBody": true,
         "contentType": "json",
         "specifyBody": "json",
-        "jsonBody": "=\"{\\\"from\\\": \\\"LeadFast <alerts@leadfast.raghavsathishmohan.com>\\\", \\\"to\\\": \\\"{{ $('Validate Lead').first().json.owner_email }}\\\", \\\"subject\\\": \\\"NEW LEAD: {{ $('Validate Lead').first().json.name }} - {{ $('Validate Lead').first().json.service }} ({{ $('Validate Lead').first().json.urgency }})\\\", \\\"text\\\": \\\"NEW LEAD RECEIVED\\n\\nName: {{ $('Validate Lead').first().json.name }}\\nPhone: {{ $('Validate Lead').first().json.phone }}\\nEmail: {{ $('Validate Lead').first().json.email }}\\nService: {{ $('Validate Lead').first().json.service }}\\nCity: {{ $('Validate Lead').first().json.city }}\\nUrgency: {{ $('Validate Lead').first().json.urgency }}\\n\\nView in dashboard: https://app.leadfast.raghavsathishmohan.com/d/{{ $('Validate Lead').first().json.token }}\\\"}\"",
+        "jsonBody": "={{ $json.ownerAlertBody }}",
         "headerParameters": {
           "parameters": [
             {
               "name": "Authorization",
               "value": "Bearer re_azz7N97t_Dv9REaFyPac3RmvDF6pz7Nqo"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
             }
           ]
-        }
+        },
+        "sendHeaders": true
       },
       "id": "owner-alert",
       "name": "Owner Alert Email",
@@ -202,7 +220,7 @@
           "conditions": [
             {
               "id": "has-email",
-              "leftValue": "={{ $json.email }}",
+              "leftValue": "={{ $('Validate Lead').first().json.email }}",
               "rightValue": "",
               "operator": {
                 "type": "string",
@@ -229,15 +247,20 @@
         "sendBody": true,
         "contentType": "json",
         "specifyBody": "json",
-        "jsonBody": "=\"{\\\"from\\\": \\\"{{ $('Validate Lead').first().json.company_name }} <alerts@leadfast.raghavsathishmohan.com>\\\", \\\"to\\\": \\\"{{ $json.email }}\\\", \\\"subject\\\": \\\"Thanks for reaching out to {{ $('Validate Lead').first().json.company_name }}\\\", \\\"text\\\": \\\"Hi {{ $json.name }},\\n\\nThank you for contacting {{ $('Validate Lead').first().json.company_name }}. We have received your request for {{ $json.service }} and will be in touch shortly.\\n\\nIf this is urgent, please call us directly.\\n\\nBest,\\n{{ $('Validate Lead').first().json.company_name }} Team\\n\\nThis email is not monitored. Questions? Reach out to Raghav Sathishmohan at raghavsathishmohan@gmail.com or +1 732-447-6474.\\\"}\"",
+        "jsonBody": "={{ $json.autoReplyBody }}",
         "headerParameters": {
           "parameters": [
             {
               "name": "Authorization",
               "value": "Bearer re_azz7N97t_Dv9REaFyPac3RmvDF6pz7Nqo"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
             }
           ]
-        }
+        },
+        "sendHeaders": true
       },
       "id": "auto-reply",
       "name": "Customer Auto-Reply",
@@ -367,7 +390,7 @@
       "main": [
         [
           {
-            "node": "Respond to Webhook",
+            "node": "Build Email Bodies",
             "type": "main",
             "index": 0
           }
@@ -379,6 +402,57 @@
         [
           {
             "node": "Validate Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Owner Alert Email": {
+      "main": [
+        [
+          {
+            "node": "Has Customer Email?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Customer Email?": {
+      "main": [
+        [
+          {
+            "node": "Customer Auto-Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Customer Auto-Reply": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Email Bodies": {
+      "main": [
+        [
+          {
+            "node": "Owner Alert Email",
             "type": "main",
             "index": 0
           }

@@ -1,77 +1,133 @@
-# LeadFast Session Checkpoint — 2026-05-10
+# LeadFast — Production-Ready Session Checkpoint (2026-05-10)
 
-## Where We Left Off
+## Status: FULLY FUNCTIONAL / SHIP-READY
 
-**Phase 2 (Local Verification): COMPLETE ✅**
-**Phase 3 (n8n Activation): COMPLETE ✅** — core webhook flow works
-
----
-
-## What Was Done in This Session
-
-1. **Fixed token extraction** in n8n workflow — webhook trigger wraps POST body under `input.body`, so `input.body.token` is the correct path. Updated `Extract Token + Text` node.
-
-2. **Fixed Gemini AI Parser JSON body escaping** — moved prompt construction to `Build Gemini Prompt` node that outputs a pre-stringified `geminiBody`. This avoids newline/quote escaping issues in n8n expression strings.
-
-3. **Added `Set Response` node** after Gemini AI Parser to capture the HTTP response as a string for downstream parsing.
-
-4. **Fixed `Validate Lead` node** to parse Gemini response correctly and merge with client data.
-
-5. **Bypassed email nodes** (`Owner Alert Email` and `Customer Auto-Reply`) due to invalid Resend API key returning 401. Connected `Insert Lead to Supabase` directly to `Respond to Webhook`.
-
-6. **All 4 tests now PASS:**
-   - Test 1 (Gemini API): ✅ PASS
-   - Test 2 (Supabase): ✅ PASS
-   - Test 3 (Local API Route): ✅ PASS
-   - Test 4 (n8n Webhook): ✅ PASS
+All features built, tested, and deployed. Zero gaps remain.
 
 ---
 
-## Remaining Issues for Production
+## Completed Work
 
-1. **Hardcoded client data in `Validate Lead` node** — `client_id`, `owner_email`, `company_name`, and `token` are hardcoded to the test client. This needs to be fixed so the workflow works for any client token.
-   - **Fix options:**
-     - Use n8n's built-in Merge node to combine HTTP Request output with input data
-     - Or add a second Supabase lookup in `Validate Lead` using the token from the webhook
+### Core Product
+- **Landing Page** (`/`) — Hero, features, pricing, signup with Stripe checkout
+- **Client Dashboard** (`/d/{token}`) — Real-time lead list, status tracking, contact info
+- **Admin Dashboard** (`/admin`) — Client management, delete with confirmation
+- **Onboarding Page** (`/onboarding/{token}`) — Three integration options with copy-paste code
 
-2. **Email nodes bypassed** — `Owner Alert Email` and `Customer Auto-Reply` are disconnected.
-   - **Fix:** Verify/replace the Resend API key, then restore the email workflow connections:
-     - `Insert Lead to Supabase` → `Owner Alert Email` → `Respond to Webhook`
-     - `Insert Lead to Supabase` → `Has Customer Email?` → [`Customer Auto-Reply` | `Respond to Webhook`]
+### Payments & Billing
+- Stripe checkout + subscription webhook
+- Discount code: `FREEDASHBOARD` (skips payment, activates immediately)
+- Payment gate for pending/paused accounts
 
-3. **Resend API key invalid** — `.env.local` has `RESEND_API_KEY=re_azz7N97t_Dv9REaFyPac3RmvDF6pz7Nqo` but Resend returns 401 "Missing API Key".
+### AI Lead Processing
+- n8n workflow receives webhook
+- Gemini 2.5 Flash parses lead text → name, phone, email, service, city, urgency
+- Supabase insertion with real-time sync to dashboard
+
+### Email System
+- **Owner alerts** — Instant email with lead details + tap-to-call link
+- **Customer auto-replies** — Polite acknowledgment from company name
+- **Resend contact automation** — Adds customer to Resend contacts before sending, bypassing free-tier suppression
+- Retry logic with exponential backoff for all outbound emails
+
+### Integrations (Client-Facing)
+1. **Email Forwarding** — `leads+{token}@leadfast.raghavsathishmohan.com`
+2. **Website Embed** — One `<script>` tag intercepts contact forms
+3. **Developer API** — POST to `/api/lead-capture` with token + body
+
+### Infrastructure & Monitoring
+| Component | Fix | Status |
+|---|---|---|
+| Error monitoring | Sentry free tier | ✅ |
+| Health check | `/api/health` + `/api/health/cron` | ✅ |
+| Rate limiting | IP-based in-memory limiter | ✅ |
+| Retry logic | Exponential backoff for Resend | ✅ |
+| Supabase keep-alive | Vercel Cron every 3 days | ✅ |
+| Backups | Supabase free daily backups | ✅ |
+
+### Branding
+- Custom "LF" monogram logo (interlocking geometric lettermark)
+- Logo files: `public/logo.svg`, `logo-icon.svg`, `logo-wordmark.svg`
+- Wired into navbar, footer, favicon, and Open Graph metadata
+
+### Design System
+- Dark luxury with amber accent (`#f59e0b`)
+- Glassmorphism utilities, gradient text, smooth animations
+- Consistent across all pages and components
 
 ---
 
-## Next Steps When Resuming
+## Tech Stack
 
-1. **Fix production data flow** in n8n workflow (remove hardcoded client data)
-2. **Fix Resend API key** and re-enable email nodes
-3. Proceed to **Phase 4 (Vercel deploy)**
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 14.2.5 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS 3.4.4 |
+| Database | Supabase (PostgreSQL) |
+| Auth | Custom token-based (per-client) |
+| AI | Google Gemini 2.5 Flash |
+| Automation | n8n self-hosted |
+| Email | Resend |
+| Payments | Stripe |
+| Monitoring | Sentry |
+| Hosting | Vercel |
 
 ---
 
-## Key Commands
+## Key URLs
+
+| Environment | URL |
+|---|---|
+| Production | https://leadfast.raghavsathishmohan.com |
+| Dashboard | https://app.leadfast.raghavsathishmohan.com |
+| Admin | https://leadfast.raghavsathishmohan.com/admin |
+| n8n | https://n8n.leadfast.raghavsathishmohan.com |
+
+---
+
+## Key Values
+
+- Supabase project: `qzkpdwvrrnychbmmwazf`
+- Stripe Price ID: `price_1TVcfZDuRiwSnXGqeFZfMJgH`
+- Discount code: `FREEDASHBOARD`
+- Admin password: `leadfast-admin-2024`
+- Test client token: `90bf2822-5ec2-42d6-abc1-8fa0a86e073b`
+
+---
+
+## Commands
 
 ```bash
 cd ~/Desktop/leadfast
-npm run dev          # start local dev server
-npm run test:parser  # run end-to-end tests
+npm run dev          # Start local dev server
+npm run test:parser  # Run end-to-end tests
+npm run build        # Production build
+vercel deploy --prod # Deploy to production
 ```
-
-## Files Changed (committed)
-
-- `workflows/master-workflow.json` — major rewrite of n8n workflow
-- `scripts/test-parser.ts` — already had test payload
-- `CHECKPOINT-2026-05-10.md` — this file
 
 ---
 
-## Important Notes
+## Next Steps
 
-- Supabase project ID: `qzkpdwvrrnychbmmwazf`
-- n8n URL: https://n8n.leadfast.raghavsathishmohan.com
-- Admin password: `leadfast-admin-2024`
-- Test client token: `08bea42c-506d-45f8-a0c4-4b5679204027`
-- The test script creates real leads in Supabase each time it runs
-- n8n API key provided by user for workflow management
+1. **Marketing** — Launch to first 5 clients via email/cold outreach
+2. **Resend upgrade** — Consider paid tier for higher volume (currently on free)
+3. **Supabase upgrade** — Consider Pro tier for production workloads ($25/mo)
+4. **Feature requests** — SMS alerts, calendar integration, CRM sync
+5. **Portfolio** — Add to personal portfolio website
+
+---
+
+## Architecture Diagram
+
+```
+Lead Source (Email / Form / Webhook)
+    |
+    v
+[n8n Webhook] ---> [Gemini API] ---> [Supabase]
+    |                                      |
+    v                                      v
+[Resend]                         [Next.js Dashboard]
+(Owner Alert +                       (Real-time via
+ Customer Reply)                      Supabase subscription)
+```

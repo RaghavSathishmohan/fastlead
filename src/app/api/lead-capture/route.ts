@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { withRetry } from '@/lib/retry';
+import { rateLimit } from '@/lib/rate-limit';
+import * as Sentry from '@sentry/nextjs';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -167,6 +170,25 @@ async function sendOwnerAlertEmail(
   });
 }
 
+async function addResendContact(email: string, firstName?: string | null, lastName?: string | null): Promise<void> {
+  if (!resendKey) return;
+
+  await fetch('https://api.resend.com/contacts', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${resendKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email,
+      first_name: firstName || undefined,
+      last_name: lastName || undefined,
+      unsubscribed: false,
+      audience_id: process.env.RESEND_AUDIENCE_ID || undefined,
+    }),
+  });
+}
+
 async function sendCustomerReply(
   customerEmail: string,
   customerName: string | null,
@@ -194,6 +216,13 @@ async function sendCustomerReply(
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for') || req.ip || 'unknown';
+    const limit = rateLimit(`lead:${ip}`, { maxRequests: 20, windowMs: 60000 });
+
+    if (!limit.success) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
+
     const body = await req.json();
     const { token, rawText } = extractTokenAndText(body);
 
@@ -243,14 +272,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Failed to insert lead: ${insertError.message}` }, { status: 500 });
     }
 
-    // Send owner alert
-    if (client.alert_email && client.owner_email) {
-      await sendOwnerAlertEmail(client.owner_email, client.company_name, token, parsed);
+    // Send owner alert with retry
+    if (client.owner_email) {
+      try {
+        await withRetry(
+          () => sendOwnerAlertEmail(client.owner_email, client.company_name, token, parsed),
+          { retries: 3, delay: 500 }
+        );
+      } catch {
+        Sentry.captureMessage('Owner alert email failed after retries');
+      }
     }
 
-    // Send customer auto-reply
+    // Send customer auto-reply with retry
     if (parsed.email) {
-      await sendCustomerReply(parsed.email, parsed.name, client.company_name, parsed.service);
+      try {
+        // Add contact first to avoid Resend suppression
+        await addResendContact(parsed.email, parsed.name?.split(' ')[0], parsed.name?.split(' ').slice(1).join(' '));
+        await withRetry(
+          () => sendCustomerReply(parsed.email!, parsed.name, client.company_name, parsed.service),
+          { retries: 3, delay: 500 }
+        );
+      } catch {
+        Sentry.captureMessage('Customer reply email failed after retries');
+      }
     }
 
     return NextResponse.json({
@@ -260,6 +305,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unexpected error';
+    Sentry.captureException(err);
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

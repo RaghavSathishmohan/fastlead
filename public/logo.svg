@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="128" fill="#0a0a0a"/>
+  <rect x="20" y="20" width="472" height="472" rx="108" stroke="rgba(245,158,11,0.15)" stroke-width="4"/>
+
+  <!--
+    Interlocking LF Monogram.
+    The L and F are fully formed, distinguishable, and lock together.
+    L is on the left. F is on the right.
+    The L's horizontal foot slides UNDER the F's vertical stem.
+    Negative space and stacking create the interaction.
+  -->
+
+  <!-- L: thick vertical bar -->
+  <polygon points="104,104 176,104 176,408 104,408" fill="#d97706"/>
+
+  <!-- L: bottom horizontal bar (kicks right, under the F) -->
+  <polygon points="104,336 248,336 248,408 104,408" fill="#f59e0b"/>
+
+  <!-- F: vertical bar (sits to the right of the L's top half) -->
+  <polygon points="248,104 320,104 320,264 320,336 248,336" fill="#f59e0b"/>
+
+  <!-- F: top horizontal bar (wide, dominant) -->
+  <polygon points="248,104 408,104 408,176 248,176" fill="#fbbf24"/>
+
+  <!-- F: middle horizontal bar -->
+  <polygon points="248,228 360,228 360,300 248,300" fill="#f59e0b"/>
+
+  <!-- Overlap shadow / depth where L foot meets F stem -->
+  <polygon points="248,336 320,336 320,408 248,408" fill="#92400e" opacity="0.5"/>
+
+  <!-- Highlight edge on F top bar -->
+  <polygon points="360,104 408,104 408,176 360,176" fill="#fef3c7" opacity="0.4"/>
+
+  <!-- Accent: diagonal slash cut through negative space (speed line) -->
+  <polygon points="176,264 248,264 176,336" fill="#78350f" opacity="0.25"/>
+</svg>

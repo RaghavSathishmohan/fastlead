@@ -2,7 +2,7 @@
 
 import { useFormState } from 'react-dom';
 import { authenticateAdmin, deleteClient, AdminResult } from '@/app/actions/admin';
-import { Shield, ExternalLink, Copy, CheckCircle, Trash2, AlertTriangle } from 'lucide-react';
+import { Shield, ExternalLink, Copy, CheckCircle, Trash2, AlertTriangle, Users } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 const initialState: AdminResult = { success: false, message: '' };
@@ -21,18 +21,20 @@ function ConfirmDialog({
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-6 max-w-sm w-full mx-4 space-y-4">
+      <div className="bg-[var(--color-surface)] border border-[var(--color-border-strong)] rounded-xl p-6 max-w-sm w-full mx-4 space-y-5">
         <div className="flex items-center gap-3 text-red-400">
-          <AlertTriangle className="w-6 h-6" />
+          <div className="w-10 h-10 rounded-lg bg-red-500/15 flex items-center justify-center">
+            <AlertTriangle className="w-5 h-5" />
+          </div>
           <h3 className="font-semibold text-lg">Delete Client</h3>
         </div>
-        <p className="text-sm text-[var(--color-muted)]">
-          Are you sure you want to delete <strong className="text-white">{clientName}</strong>? This will also delete all their leads and cannot be undone.
+        <p className="text-sm text-[var(--color-text-secondary)]">
+          Are you sure you want to delete <strong className="text-[var(--color-text)]">{clientName}</strong>? This will also delete all their leads and cannot be undone.
         </p>
         <div className="flex gap-3">
           <button
             onClick={onCancel}
-            className="flex-1 px-4 py-2.5 rounded-lg border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface)] transition-colors"
+            className="flex-1 px-4 py-2.5 rounded-lg border border-[var(--color-border)] text-sm font-medium hover:bg-[var(--color-surface-hover)] transition-colors"
           >
             Cancel
           </button>
@@ -77,19 +79,25 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="min-h-dvh">
-      <header className="border-b border-[var(--color-border)]">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center gap-2">
-          <Shield className="w-5 h-5 text-brand-500" />
-          <span className="font-bold">LeadFast Admin</span>
+    <div className="min-h-dvh flex flex-col">
+      <header className="sticky top-0 z-30 glass border-b border-[var(--color-border)]">
+        <div className="max-w-6xl mx-auto px-4 py-3.5 flex items-center gap-2.5">
+          <img src="/logo-icon.svg" alt="" className="w-8 h-8" />
+          <span className="font-bold text-lg tracking-tight">LeadFast Admin</span>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-12">
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10 md:py-14">
         {!authState.success ? (
-          <form action={authAction} className="max-w-sm mx-auto space-y-4">
-            <h1 className="text-2xl font-bold text-center">Admin Access</h1>
-            <div className="space-y-1">
+          <form action={authAction} className="max-w-sm mx-auto space-y-6">
+            <div className="text-center space-y-2">
+              <div className="w-14 h-14 bg-brand-500/15 rounded-full flex items-center justify-center mx-auto">
+                <Shield className="w-7 h-7 text-brand-500" />
+              </div>
+              <h1 className="text-2xl font-bold">Admin Access</h1>
+              <p className="text-sm text-[var(--color-text-secondary)]">Enter your password to manage clients.</p>
+            </div>
+            <div className="space-y-1.5">
               <label className="text-sm font-medium">Password</label>
               <input
                 type="password"
@@ -97,7 +105,7 @@ export default function AdminPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 transition-colors"
+                className="w-full bg-[var(--color-elevated)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/20 transition-all"
                 placeholder="Enter admin password"
               />
             </div>
@@ -106,16 +114,21 @@ export default function AdminPage() {
             )}
             <button
               type="submit"
-              className="w-full bg-brand-600 hover:bg-brand-500 text-white rounded-xl py-3 font-medium transition-colors"
+              className="w-full bg-brand-600 hover:bg-brand-500 text-white rounded-xl py-3 font-semibold transition-all duration-normal hover:shadow-glow"
             >
               Sign In
             </button>
           </form>
         ) : (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold">Clients</h1>
-              <span className="text-sm text-[var(--color-muted)]">{clients?.length || 0} total</span>
+          <div className="space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <Users className="w-5 h-5 text-[var(--color-text-secondary)]" />
+                <h1 className="text-2xl font-bold tracking-tight">Clients</h1>
+              </div>
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[var(--color-elevated)] border border-[var(--color-border)] text-xs font-medium text-[var(--color-text-secondary)]">
+                {clients?.length || 0} total
+              </span>
             </div>
 
             {deleteState.message && (
@@ -125,14 +138,17 @@ export default function AdminPage() {
             )}
 
             {clients && clients.length > 0 ? (
-              <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl">
+              <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl overflow-hidden">
                 <ClientTable
                   clients={clients}
                   onDelete={(id, name) => setDeleteConfirm({ id, name })}
                 />
               </div>
             ) : (
-              <p className="text-[var(--color-muted)]">No clients yet.</p>
+              <div className="text-center py-16 text-[var(--color-text-secondary)]">
+                <Users className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                <p>No clients yet.</p>
+              </div>
             )}
           </div>
         )}
@@ -167,39 +183,53 @@ function ClientTable({
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-[var(--color-border)] text-[var(--color-muted)] text-left">
-            <th className="py-3 px-4 font-medium">Name</th>
-            <th className="py-3 px-4 font-medium">Company</th>
-            <th className="py-3 px-4 font-medium">Email</th>
-            <th className="py-3 px-4 font-medium">Phone</th>
-            <th className="py-3 px-4 font-medium">Dashboard</th>
-            <th className="py-3 px-4 font-medium">Created</th>
-            <th className="py-3 px-4 font-medium" />
+          <tr className="border-b border-[var(--color-border)] text-[var(--color-text-secondary)] text-left">
+            <th className="py-3.5 px-4 font-medium text-xs uppercase tracking-wider">Name</th>
+            <th className="py-3.5 px-4 font-medium text-xs uppercase tracking-wider">Company</th>
+            <th className="py-3.5 px-4 font-medium text-xs uppercase tracking-wider">Email</th>
+            <th className="py-3.5 px-4 font-medium text-xs uppercase tracking-wider">Phone</th>
+            <th className="py-3.5 px-4 font-medium text-xs uppercase tracking-wider">Status</th>
+            <th className="py-3.5 px-4 font-medium text-xs uppercase tracking-wider">Dashboard</th>
+            <th className="py-3.5 px-4 font-medium text-xs uppercase tracking-wider">Created</th>
+            <th className="py-3.5 px-4 font-medium text-xs uppercase tracking-wider" />
           </tr>
         </thead>
         <tbody className="divide-y divide-[var(--color-border)]">
           {clients.map((client) => {
             const dashboardUrl = `https://app.leadfast.raghavsathishmohan.com/d/${client.token}`;
             return (
-              <tr key={client.id} className="hover:bg-[var(--color-card)] transition-colors">
-                <td className="py-3 px-4">{client.name}</td>
-                <td className="py-3 px-4">{client.company_name}</td>
-                <td className="py-3 px-4">{client.owner_email}</td>
-                <td className="py-3 px-4">{client.owner_phone || '—'}</td>
-                <td className="py-3 px-4">
+              <tr key={client.id} className="hover:bg-[var(--color-surface-hover)] transition-colors">
+                <td className="py-3.5 px-4 font-medium">{client.name}</td>
+                <td className="py-3.5 px-4">{client.company_name}</td>
+                <td className="py-3.5 px-4">{client.owner_email}</td>
+                <td className="py-3.5 px-4 text-[var(--color-text-secondary)]">{client.owner_phone || '—'}</td>
+                <td className="py-3.5 px-4">
+                  <span
+                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                      client.status === 'active'
+                        ? 'bg-green-500/15 text-green-400 border border-green-500/20'
+                        : client.status === 'pending'
+                          ? 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/20'
+                          : 'bg-red-500/15 text-red-400 border border-red-500/20'
+                    }`}
+                  >
+                    {client.status}
+                  </span>
+                </td>
+                <td className="py-3.5 px-4">
                   <div className="flex items-center gap-2">
                     <a
                       href={dashboardUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-brand-500 hover:text-brand-400 inline-flex items-center gap-1"
+                      className="text-brand-500 hover:text-brand-400 inline-flex items-center gap-1.5 font-medium transition-colors"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                       Open
                     </a>
                     <button
                       onClick={() => copyLink(dashboardUrl, client.token)}
-                      className="text-[var(--color-muted)] hover:text-white transition-colors"
+                      className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors p-1 rounded-md hover:bg-[var(--color-surface-hover)]"
                       title="Copy dashboard link"
                     >
                       {copied === client.token ? (
@@ -210,13 +240,13 @@ function ClientTable({
                     </button>
                   </div>
                 </td>
-                <td className="py-3 px-4 text-[var(--color-muted)]">
+                <td className="py-3.5 px-4 text-[var(--color-text-secondary)]">
                   {new Date(client.created_at).toLocaleDateString()}
                 </td>
-                <td className="py-3 px-4">
+                <td className="py-3.5 px-4">
                   <button
                     onClick={() => onDelete(client.id, client.name)}
-                    className="text-[var(--color-muted)] hover:text-red-400 transition-colors"
+                    className="text-[var(--color-text-secondary)] hover:text-red-400 transition-colors p-1.5 rounded-md hover:bg-red-500/10"
                     title="Delete client"
                   >
                     <Trash2 className="w-4 h-4" />

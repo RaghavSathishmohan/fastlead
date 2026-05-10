@@ -67,16 +67,18 @@ export function LeadList({ clientId, initialLeads }: LeadListProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Bell className="w-5 h-5 text-brand-500" />
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-brand-500/15 flex items-center justify-center">
+            <Bell className="w-4 h-4 text-brand-500" />
+          </div>
           <span className="font-semibold">Leads</span>
-          <span className="text-[var(--color-muted)] text-sm">({leads.length})</span>
+          <span className="text-[var(--color-text-secondary)] text-sm">({leads.length})</span>
         </div>
         <div className="flex items-center gap-2">
-          {isPolling && <RefreshCw className="w-4 h-4 text-[var(--color-muted)] animate-spin" />}
-          <span className="text-xs text-[var(--color-muted)]">
+          {isPolling && <RefreshCw className="w-4 h-4 text-[var(--color-text-tertiary)] animate-spin" />}
+          <span className="text-xs text-[var(--color-text-tertiary)]">
             Updated {Math.floor((Date.now() - lastUpdate) / 1000)}s ago
           </span>
         </div>
@@ -87,10 +89,10 @@ export function LeadList({ clientId, initialLeads }: LeadListProps) {
           <button
             key={status}
             onClick={() => setFilter(status)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-fast ${
               filter === status
-                ? 'bg-brand-600 text-white'
-                : 'bg-[var(--color-card)] text-[var(--color-muted)] hover:text-white'
+                ? 'bg-brand-600 text-white shadow-sm'
+                : 'bg-[var(--color-surface)] text-[var(--color-text-secondary)] border border-[var(--color-border)] hover:text-[var(--color-text)] hover:border-[var(--color-border-strong)]'
             }`}
           >
             {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -101,9 +103,11 @@ export function LeadList({ clientId, initialLeads }: LeadListProps) {
 
       <div className="space-y-3">
         {filteredLeads.length === 0 ? (
-          <div className="text-center py-12 text-[var(--color-muted)]">
-            <Filter className="w-8 h-8 mx-auto mb-3 opacity-50" />
-            <p>No leads found</p>
+          <div className="text-center py-14 text-[var(--color-text-secondary)]">
+            <div className="w-14 h-14 bg-[var(--color-elevated)] rounded-full flex items-center justify-center mx-auto mb-4">
+              <Filter className="w-6 h-6 opacity-40" />
+            </div>
+            <p className="font-medium">No leads found</p>
             <p className="text-sm mt-1">New leads will appear here automatically</p>
           </div>
         ) : (

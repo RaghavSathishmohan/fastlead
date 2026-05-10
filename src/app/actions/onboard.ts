@@ -21,7 +21,8 @@ export async function onboardClient(input: OnboardClientInput) {
       name: input.name,
       owner_email: input.owner_email,
       owner_phone: input.owner_phone || null,
-      company_name: input.company_name
+      company_name: input.company_name,
+      status: 'pending'
     })
     .select()
     .single();

@@ -8,6 +8,8 @@ export interface Client {
   alert_email: boolean;
   alert_sms: boolean;
   status: 'pending' | 'active' | 'paused';
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
   created_at: string;
 }
 

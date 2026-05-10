@@ -14,7 +14,9 @@ CREATE TABLE IF NOT EXISTS clients (
   company_name TEXT NOT NULL,
   alert_email BOOLEAN DEFAULT true,
   alert_sms BOOLEAN DEFAULT false,
-  status TEXT DEFAULT 'active' CHECK (status IN ('pending', 'active', 'paused')),
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'paused')),
+  stripe_customer_id TEXT,
+  stripe_subscription_id TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

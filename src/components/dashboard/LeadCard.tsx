@@ -35,37 +35,37 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
   };
 
   return (
-    <article className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-4 space-y-3">
-      <div className="flex items-start justify-between">
-        <div className="min-w-0">
+    <article className="group bg-[var(--color-surface)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] rounded-xl p-5 space-y-4 transition-all duration-normal">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <h3 className="font-semibold text-sm truncate">{lead.name}</h3>
-          <div className="flex items-center gap-2 mt-1">
+          <div className="flex items-center gap-2 mt-1.5">
             <StatusBadge status={lead.status} />
             <UrgencyBadge urgency={lead.urgency} />
           </div>
         </div>
-        <div className="flex items-center text-[var(--color-muted)] text-xs">
+        <div className="flex items-center text-[var(--color-text-tertiary)] text-xs shrink-0">
           <Clock className="w-3 h-3 mr-1" />
           {timeAgo(lead.created_at)}
         </div>
       </div>
 
-      <div className="space-y-1.5 text-sm">
+      <div className="space-y-2 text-sm">
         {lead.service && (
-          <div className="flex items-center gap-2 text-[var(--color-muted)]">
-            <Wrench className="w-4 h-4 shrink-0" />
+          <div className="flex items-center gap-2.5 text-[var(--color-text-secondary)]">
+            <Wrench className="w-4 h-4 shrink-0 text-[var(--color-text-tertiary)]" />
             <span>{lead.service}</span>
           </div>
         )}
         {lead.city && (
-          <div className="flex items-center gap-2 text-[var(--color-muted)]">
-            <MapPin className="w-4 h-4 shrink-0" />
+          <div className="flex items-center gap-2.5 text-[var(--color-text-secondary)]">
+            <MapPin className="w-4 h-4 shrink-0 text-[var(--color-text-tertiary)]" />
             <span>{lead.city}</span>
           </div>
         )}
         {lead.email && (
-          <div className="flex items-center gap-2 text-[var(--color-muted)]">
-            <Mail className="w-4 h-4 shrink-0" />
+          <div className="flex items-center gap-2.5 text-[var(--color-text-secondary)]">
+            <Mail className="w-4 h-4 shrink-0 text-[var(--color-text-tertiary)]" />
             <span className="truncate">{lead.email}</span>
           </div>
         )}
@@ -75,7 +75,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
         {lead.phone && (
           <a
             href={`tel:${lead.phone}`}
-            className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white rounded-lg py-2.5 text-sm font-medium transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 text-white rounded-lg py-2.5 text-sm font-semibold transition-colors"
           >
             <Phone className="w-4 h-4" />
             Call
@@ -84,7 +84,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
         <button
           onClick={() => handleStatusChange('called')}
           disabled={isUpdating || lead.status === 'called'}
-          className="flex items-center justify-center p-2.5 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-card-hover)] transition-colors disabled:opacity-50"
+          className="flex items-center justify-center p-2.5 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-surface-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           aria-label="Mark as called"
         >
           <PhoneCall className="w-4 h-4 text-yellow-400" />
@@ -92,7 +92,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
         <button
           onClick={() => handleStatusChange('won')}
           disabled={isUpdating || lead.status === 'won'}
-          className="flex items-center justify-center p-2.5 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-card-hover)] transition-colors disabled:opacity-50"
+          className="flex items-center justify-center p-2.5 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-surface-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           aria-label="Mark as won"
         >
           <CheckCircle className="w-4 h-4 text-green-400" />
@@ -100,7 +100,7 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
         <button
           onClick={() => handleStatusChange('lost')}
           disabled={isUpdating || lead.status === 'lost'}
-          className="flex items-center justify-center p-2.5 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-card-hover)] transition-colors disabled:opacity-50"
+          className="flex items-center justify-center p-2.5 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-surface-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           aria-label="Mark as lost"
         >
           <XCircle className="w-4 h-4 text-red-400" />
