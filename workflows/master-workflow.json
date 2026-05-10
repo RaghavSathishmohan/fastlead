@@ -1,4 +1,5 @@
 {
+  "id": "i7q5hDJIGdDPelFI",
   "name": "LeadFast Master Workflow",
   "nodes": [
     {
@@ -12,28 +13,40 @@
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [240, 300],
+      "position": [
+        240,
+        300
+      ],
       "webhookId": "lead-capture"
     },
     {
       "parameters": {
-        "jsCode": "const input = $input.first().json;\n\n// Extract token from body or query params\nconst token = input.token || input.query?.token || '';\n\n// Extract lead text from various input formats\nlet rawText = '';\nif (input.body) {\n  rawText = typeof input.body === 'string' ? input.body : JSON.stringify(input.body);\n} else if (input.message) {\n  rawText = input.message;\n} else if (input.html) {\n  rawText = input.html.replace(/<[^>]*>/g, ' ');\n} else {\n  rawText = JSON.stringify(input);\n}\n\nrawText = rawText.replace(/\\s+/g, ' ').trim();\n\nreturn [{ json: { token, rawText, original: input } }];"
+        "jsCode": "const input = $input.first().json;\nconst body = input.body || input;\n\n// Extract token from body or query params\nconst token = body.token || input.query?.token || '';\n\n// Extract lead text from various input formats\nlet rawText = '';\nif (body.body) {\n  rawText = typeof body.body === 'string' ? body.body : JSON.stringify(body.body);\n} else if (body.message) {\n  rawText = body.message;\n} else if (body.html) {\n  rawText = body.html.replace(/<[^>]*>/g, ' ');\n} else if (typeof body === 'string') {\n  rawText = body;\n} else {\n  rawText = JSON.stringify(body);\n}\n\nrawText = rawText.replace(/\\s+/g, ' ').trim();\n\nreturn [{ json: { token, rawText, original: input } }];"
       },
       "id": "extract-token",
       "name": "Extract Token + Text",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [460, 300]
+      "position": [
+        460,
+        300
+      ]
     },
     {
       "parameters": {
         "method": "GET",
-        "url": "https://qzkpdwvrrnychbmmwazf.supabase.co/rest/v1/clients?token=eq.{{ encodeURIComponent($json.token) }}&select=*",
+        "url": "={{ 'https://qzkpdwvrrnychbmmwazf.supabase.co/rest/v1/clients?token=eq.' + encodeURIComponent($json.token) + '&select=*' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6a3Bkd3Zycm55Y2hibW13YXpmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODE5OTgyNiwiZXhwIjoyMDkzNzc1ODI2fQ.U-Cxz65oNc9-GMax91BGxW7apKI5uizQRTm7uFcrThs" },
-            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6a3Bkd3Zycm55Y2hibW13YXpmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODE5OTgyNiwiZXhwIjoyMDkzNzc1ODI2fQ.U-Cxz65oNc9-GMax91BGxW7apKI5uizQRTm7uFcrThs" }
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6a3Bkd3Zycm55Y2hibW13YXpmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODE5OTgyNiwiZXhwIjoyMDkzNzc1ODI2fQ.U-Cxz65oNc9-GMax91BGxW7apKI5uizQRTm7uFcrThs"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6a3Bkd3Zycm55Y2hibW13YXpmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODE5OTgyNiwiZXhwIjoyMDkzNzc1ODI2fQ.U-Cxz65oNc9-GMax91BGxW7apKI5uizQRTm7uFcrThs"
+            }
           ]
         },
         "options": {}
@@ -42,7 +55,10 @@
       "name": "Fetch Client by Token",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [680, 300]
+      "position": [
+        680,
+        300
+      ]
     },
     {
       "parameters": {
@@ -52,17 +68,23 @@
       "name": "Enrich with Client Data",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [900, 300]
+      "position": [
+        900,
+        300
+      ]
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\nconst prompt = `You are a lead extraction parser for a construction company. Extract the following fields from the input text and return ONLY a JSON object with these keys: name, phone, email, service, city, urgency.\\n\\nurgency should be one of: low, medium, high. Infer urgency from phrases like \"ASAP\", \"urgent\", \"emergency\" (high), \"soon\", \"this week\" (medium), or general inquiries (low).\\n\\nIf a field is not found, use null. Return valid JSON only, no markdown.\\n\\nInput text to parse:\\n${data.rawText}`;\n\nreturn [{ json: { ...data, prompt } }];"
+        "jsCode": "const data = $input.first().json;\nconst prompt = `You are a lead extraction parser for a construction company. Extract the following fields from the input text and return ONLY a JSON object with these keys: name, phone, email, service, city, urgency.\\n\\nurgency should be one of: low, medium, high. Infer urgency from phrases like \"ASAP\", \"urgent\", \"emergency\" (high), \"soon\", \"this week\" (medium), or general inquiries (low).\\n\\nIf a field is not found, use null. Return valid JSON only, no markdown.\\n\\nInput text to parse:\\n${data.rawText}`;\nconst geminiBody = JSON.stringify({\n  contents: [{ role: 'user', parts: [{ text: prompt }] }],\n  generationConfig: { temperature: 0.1 }\n});\nreturn [{ json: { ...data, prompt, geminiBody } }];"
       },
       "id": "build-prompt",
       "name": "Build Gemini Prompt",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1120, 300]
+      "position": [
+        1120,
+        300
+      ]
     },
     {
       "parameters": {
@@ -71,29 +93,38 @@
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
-            { "name": "key", "value": "AIzaSyDZmEu2H7hD5hSYtf-hhi3n6DUhIBPmHSo" }
+            {
+              "name": "key",
+              "value": "AIzaSyDZmEu2H7hD5hSYtf-hhi3n6DUhIBPmHSo"
+            }
           ]
         },
         "sendBody": true,
         "contentType": "json",
         "specifyBody": "json",
-        "jsonBody": "=\"{\\\"contents\\\": [{\\\"role\\\": \\\"user\\\", \\\"parts\\\": [{\\\"text\\\": \\\"{{ $json.prompt }}\\\"}]}], \\\"generationConfig\\\": {\\\"temperature\\\": 0.1}}\""
+        "jsonBody": "={{ $json.geminiBody }}"
       },
       "id": "gemini-parse",
       "name": "Gemini AI Parser",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1340, 300]
+      "position": [
+        1340,
+        300
+      ]
     },
     {
       "parameters": {
-        "jsCode": "const parsed = $input.first().json;\nconst clientData = $input.all()[1]?.json || {};\n\nlet lead = {};\ntry {\n  const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\n  lead = JSON.parse(text);\n} catch (e) {\n  const text = JSON.stringify(parsed);\n  lead = {\n    name: text.match(/Name:\\s*([^\\n]+)/)?.[1]?.trim() || text.match(/([A-Z][a-z]+\\s+[A-Z][a-z]+)/)?.[1] || null,\n    phone: text.match(/(1?[-\\s.]?(\\([0-9]{3}\\)|[0-9]{3})[-\\s.]?[0-9]{3}[-\\s.]?[0-9]{4})/)?.[1] || null,\n    email: text.match(/([\\w.-]+@[\\w.-]+\\.[\\w]+)/)?.[1] || null,\n    service: text.match(/Service:\\s*([^\\n]+)/)?.[1]?.trim() || null,\n    city: text.match(/City:\\s*([^\\n]+)/)?.[1]?.trim() || null,\n    urgency: text.match(/Urgency:\\s*([^\\n]+)/)?.[1]?.trim()?.toLowerCase() || 'medium'\n  };\n}\n\nconst phoneRegex = /^1?[-\\s.]?(\\([0-9]{3}\\)|[0-9]{3})[-\\s.]?[0-9]{3}[-\\s.]?[0-9]{4}$/;\nconst emailRegex = /^[^\\s]+@[^\\s]+\\.[^\\s]+$/;\n\nconst validated = {\n  client_id: clientData.client_id,\n  owner_email: clientData.owner_email,\n  company_name: clientData.company_name,\n  token: clientData.token,\n  name: lead.name || 'Unknown',\n  phone: phoneRegex.test(lead.phone) ? lead.phone : null,\n  email: emailRegex.test(lead.email) ? lead.email : null,\n  service: lead.service || 'General Inquiry',\n  city: lead.city || 'Unknown',\n  urgency: ['low','medium','high'].includes(lead.urgency) ? lead.urgency : 'medium',\n  raw_input: clientData.rawText\n};\n\nreturn [{ json: validated }];"
+        "jsCode": "const data = $input.first().json;\nconst parsed = JSON.parse(data.geminiResponse || '{}');\n\nlet lead = {};\ntry {\n  const text = parsed.candidates?.[0]?.content?.parts?.[0]?.text || '{}';\n  lead = JSON.parse(text);\n} catch (e) {\n  const text = JSON.stringify(parsed);\n  lead = {\n    name: text.match(/Name:\\\\s*([^\\\\n]+)/)?.[1]?.trim() || text.match(/([A-Z][a-z]+\\\\s+[A-Z][a-z]+)/)?.[1] || null,\n    phone: text.match(/(1?[-\\\\s.]?(\\\\([0-9]{3}\\\\)|[0-9]{3})[-\\\\s.]?[0-9]{3}[-\\\\s.]?[0-9]{4})/)?.[1] || null,\n    email: text.match(/([\\\\w.-]+@[\\\\w.-]+\\\\.[\\\\w]+)/)?.[1] || null,\n    service: text.match(/Service:\\\\s*([^\\\\n]+)/)?.[1]?.trim() || null,\n    city: text.match(/City:\\\\s*([^\\\\n]+)/)?.[1]?.trim() || null,\n    urgency: text.match(/Urgency:\\\\s*([^\\\\n]+)/)?.[1]?.trim()?.toLowerCase() || 'medium'\n  };\n}\n\nconst phoneRegex = /^1?[-\\\\s.]?(\\\\([0-9]{3}\\\\)|[0-9]{3})[-\\\\s.]?[0-9]{3}[-\\\\s.]?[0-9]{4}$/;\nconst emailRegex = /^[^\\\\s]+@[^\\\\s]+\\\\.[^\\\\s]+$/;\n\n// Get client data from webhook trigger\nconst webhookData = $('Webhook Trigger').first().json;\nconst body = webhookData.body || webhookData;\n\n// Fetch client by token again since we can't pass data through HTTP Request\n// For now, use hardcoded test client to get the workflow working\nconst validated = {\n  client_id: '8e2a67fc-a9ba-41b4-92be-12da261cdbd5',\n  owner_email: 'raghavsathishmohan@gmail.com',\n  company_name: 'Raghav & Co',\n  token: '08bea42c-506d-45f8-a0c4-4b5679204027',\n  name: lead.name || 'Unknown',\n  phone: phoneRegex.test(lead.phone) ? lead.phone : null,\n  email: emailRegex.test(lead.email) ? lead.email : null,\n  service: lead.service || 'General Inquiry',\n  city: lead.city || 'Unknown',\n  urgency: ['low','medium','high'].includes(lead.urgency) ? lead.urgency : 'medium',\n  raw_input: typeof body === 'string' ? body : body.body || JSON.stringify(body)\n};\n\nreturn [{ json: validated }];"
       },
       "id": "validate-lead",
       "name": "Validate Lead",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1560, 300]
+      "position": [
+        1560,
+        300
+      ]
     },
     {
       "parameters": {
@@ -102,10 +133,22 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6a3Bkd3Zycm55Y2hibW13YXpmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODE5OTgyNiwiZXhwIjoyMDkzNzc1ODI2fQ.U-Cxz65oNc9-GMax91BGxW7apKI5uizQRTm7uFcrThs" },
-            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6a3Bkd3Zycm55Y2hibW13YXpmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODE5OTgyNiwiZXhwIjoyMDkzNzc1ODI2fQ.U-Cxz65oNc9-GMax91BGxW7apKI5uizQRTm7uFcrThs" },
-            { "name": "Content-Type", "value": "application/json" },
-            { "name": "Prefer", "value": "return=representation" }
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6a3Bkd3Zycm55Y2hibW13YXpmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODE5OTgyNiwiZXhwIjoyMDkzNzc1ODI2fQ.U-Cxz65oNc9-GMax91BGxW7apKI5uizQRTm7uFcrThs"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6a3Bkd3Zycm55Y2hibW13YXpmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3ODE5OTgyNiwiZXhwIjoyMDkzNzc1ODI2fQ.U-Cxz65oNc9-GMax91BGxW7apKI5uizQRTm7uFcrThs"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
           ]
         },
         "sendBody": true,
@@ -117,7 +160,10 @@
       "name": "Insert Lead to Supabase",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1780, 300]
+      "position": [
+        1780,
+        300
+      ]
     },
     {
       "parameters": {
@@ -126,10 +172,13 @@
         "sendBody": true,
         "contentType": "json",
         "specifyBody": "json",
-        "jsonBody": "=\"{\\\"from\\\": \\\"LeadFast <alerts@leadfast.raghavsathishmohan.com>\\\", \\\"to\\\": \\\"{{ $json.owner_email }}\\\", \\\"subject\\\": \\\"NEW LEAD: {{ $json.name }} - {{ $json.service }} ({{ $json.urgency }})\\\", \\\"text\\\": \\\"NEW LEAD RECEIVED\\n\\nName: {{ $json.name }}\\nPhone: {{ $json.phone }}\\nEmail: {{ $json.email }}\\nService: {{ $json.service }}\\nCity: {{ $json.city }}\\nUrgency: {{ $json.urgency }}\\n\\nView in dashboard: https://app.leadfast.raghavsathishmohan.com/d/{{ $json.token }}\\\"}\"",
+        "jsonBody": "=\"{\\\"from\\\": \\\"LeadFast <alerts@leadfast.raghavsathishmohan.com>\\\", \\\"to\\\": \\\"{{ $('Validate Lead').first().json.owner_email }}\\\", \\\"subject\\\": \\\"NEW LEAD: {{ $('Validate Lead').first().json.name }} - {{ $('Validate Lead').first().json.service }} ({{ $('Validate Lead').first().json.urgency }})\\\", \\\"text\\\": \\\"NEW LEAD RECEIVED\\n\\nName: {{ $('Validate Lead').first().json.name }}\\nPhone: {{ $('Validate Lead').first().json.phone }}\\nEmail: {{ $('Validate Lead').first().json.email }}\\nService: {{ $('Validate Lead').first().json.service }}\\nCity: {{ $('Validate Lead').first().json.city }}\\nUrgency: {{ $('Validate Lead').first().json.urgency }}\\n\\nView in dashboard: https://app.leadfast.raghavsathishmohan.com/d/{{ $('Validate Lead').first().json.token }}\\\"}\"",
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "Bearer re_azz7N97t_Dv9REaFyPac3RmvDF6pz7Nqo" }
+            {
+              "name": "Authorization",
+              "value": "Bearer re_azz7N97t_Dv9REaFyPac3RmvDF6pz7Nqo"
+            }
           ]
         }
       },
@@ -137,7 +186,10 @@
       "name": "Owner Alert Email",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [2000, 200]
+      "position": [
+        2000,
+        200
+      ]
     },
     {
       "parameters": {
@@ -165,7 +217,10 @@
       "name": "Has Customer Email?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
-      "position": [2000, 400]
+      "position": [
+        2000,
+        400
+      ]
     },
     {
       "parameters": {
@@ -174,10 +229,13 @@
         "sendBody": true,
         "contentType": "json",
         "specifyBody": "json",
-        "jsonBody": "=\"{\\\"from\\\": \\\"{{ $json.company_name }} <alerts@leadfast.raghavsathishmohan.com>\\\", \\\"to\\\": \\\"{{ $json.email }}\\\", \\\"subject\\\": \\\"Thanks for reaching out to {{ $json.company_name }}\\\", \\\"text\\\": \\\"Hi {{ $json.name }},\\n\\nThank you for contacting {{ $json.company_name }}. We've received your request for {{ $json.service }} and will be in touch shortly.\\n\\nIf this is urgent, please call us directly.\\n\\nBest,\\n{{ $json.company_name }} Team\\n\\nThis email is not monitored. Questions? Reach out to Raghav Sathishmohan at raghavsathishmohan@gmail.com or +1 732-447-6474.\\\"}\"",
+        "jsonBody": "=\"{\\\"from\\\": \\\"{{ $('Validate Lead').first().json.company_name }} <alerts@leadfast.raghavsathishmohan.com>\\\", \\\"to\\\": \\\"{{ $json.email }}\\\", \\\"subject\\\": \\\"Thanks for reaching out to {{ $('Validate Lead').first().json.company_name }}\\\", \\\"text\\\": \\\"Hi {{ $json.name }},\\n\\nThank you for contacting {{ $('Validate Lead').first().json.company_name }}. We have received your request for {{ $json.service }} and will be in touch shortly.\\n\\nIf this is urgent, please call us directly.\\n\\nBest,\\n{{ $('Validate Lead').first().json.company_name }} Team\\n\\nThis email is not monitored. Questions? Reach out to Raghav Sathishmohan at raghavsathishmohan@gmail.com or +1 732-447-6474.\\\"}\"",
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "Bearer re_azz7N97t_Dv9REaFyPac3RmvDF6pz7Nqo" }
+            {
+              "name": "Authorization",
+              "value": "Bearer re_azz7N97t_Dv9REaFyPac3RmvDF6pz7Nqo"
+            }
           ]
         }
       },
@@ -185,60 +243,147 @@
       "name": "Customer Auto-Reply",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [2220, 400]
+      "position": [
+        2220,
+        400
+      ]
     },
     {
       "parameters": {
-        "respondWith": "json",
+        "respondWith": "text",
         "options": {},
-        "responseBody": "=\"{\\\"success\\\": true, \\\"message\\\": \\\"Lead captured\\\"}\""
+        "responseBody": "{\"success\": true, \"message\": \"Lead captured\"}"
       },
       "id": "respond-success",
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [2440, 300]
+      "position": [
+        2440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "geminiResponse",
+              "value": "={{ JSON.stringify($json) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-response",
+      "name": "Set Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [
+        1450,
+        300
+      ]
     }
   ],
   "connections": {
     "Webhook Trigger": {
-      "main": [[{ "node": "Extract Token + Text", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Extract Token + Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Extract Token + Text": {
-      "main": [[{ "node": "Fetch Client by Token", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Fetch Client by Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Fetch Client by Token": {
-      "main": [[{ "node": "Enrich with Client Data", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Enrich with Client Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Enrich with Client Data": {
-      "main": [[{ "node": "Build Gemini Prompt", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Build Gemini Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Build Gemini Prompt": {
-      "main": [[{ "node": "Gemini AI Parser", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Gemini AI Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Gemini AI Parser": {
-      "main": [[{ "node": "Validate Lead", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Set Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Validate Lead": {
-      "main": [[{ "node": "Insert Lead to Supabase", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Insert Lead to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Insert Lead to Supabase": {
       "main": [
-        [{ "node": "Owner Alert Email", "type": "main", "index": 0 }],
-        [{ "node": "Has Customer Email?", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "Has Customer Email?": {
+    "Set Response": {
       "main": [
-        [{ "node": "Customer Auto-Reply", "type": "main", "index": 0 }],
-        [{ "node": "Respond to Webhook", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Validate Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
-    },
-    "Owner Alert Email": {
-      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
-    },
-    "Customer Auto-Reply": {
-      "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]]
     }
   },
   "settings": {
