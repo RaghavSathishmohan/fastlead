@@ -84,11 +84,47 @@ COMMIT;
 
 ALTER PUBLICATION supabase_realtime ADD TABLE leads;
 
+-- Push subscriptions table
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  client_id UUID REFERENCES clients(id) ON DELETE CASCADE NOT NULL,
+  endpoint TEXT NOT NULL,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(client_id, endpoint)
+);
+
+ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "push_sub_select_token"
+  ON push_subscriptions FOR SELECT
+  USING (EXISTS (
+    SELECT 1 FROM clients
+    WHERE clients.id = push_subscriptions.client_id
+  ));
+
+CREATE POLICY "push_sub_insert_service"
+  ON push_subscriptions FOR INSERT
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM clients
+    WHERE clients.id = push_subscriptions.client_id
+  ));
+
+CREATE POLICY "push_sub_delete_token"
+  ON push_subscriptions FOR DELETE
+  USING (EXISTS (
+    SELECT 1 FROM clients
+    WHERE clients.id = push_subscriptions.client_id
+  ));
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_leads_client_id ON leads(client_id);
 CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
 CREATE INDEX IF NOT EXISTS idx_leads_created_at ON leads(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_clients_token ON clients(token);
+CREATE INDEX IF NOT EXISTS idx_push_sub_client_id ON push_subscriptions(client_id);
 
 -- Function for 90-day cleanup
 CREATE OR REPLACE FUNCTION cleanup_old_leads()

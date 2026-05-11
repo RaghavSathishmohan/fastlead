@@ -1,4 +1,3 @@
-import { chromium, Browser, Page } from 'playwright';
 import { createWriteStream } from 'fs';
 import * as readline from 'readline';
 
@@ -39,154 +38,232 @@ function extractEmail(text: string): string | null {
   return match ? match[0] : null;
 }
 
-async function searchGoogle(
-  page: Page,
+async function fetchHTML(url: string, timeout = 15000): Promise<string | null> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeout);
+
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+      },
+      signal: controller.signal
+    });
+
+    clearTimeout(timer);
+
+    if (!response.ok) return null;
+    return await response.text();
+  } catch {
+    return null;
+  }
+}
+
+function isAggregator(url: string): boolean {
+  const aggregators = [
+    'yelp.com', 'facebook.com', 'bbb.org', 'angi.com', 'homeadvisor.com',
+    'thumbtack.com', 'houzz.com', 'buildzoom.com', 'nextdoor.com',
+    'wikipedia.org', 'yellowpages.com', 'superpages.com', 'manta.com',
+    'chamberofcommerce.com', 'porch.com', 'craftjack.com', 'networx.com',
+    'fixr.com', 'tackk.com', 'alignable.com', 'bark.com', 'groupon.com',
+    'porchlightpro.com', 'contractors.com', 'modernize.com', 'smith.ai',
+    'credible.com', 'lawnlove.com', 'homeyou.com', 'renovationfind.com',
+    'trustedpros.ca', 'threebestrated.com', 'expertise.com', 'hirethebest.com'
+  ];
+  return aggregators.some(a => url.includes(a));
+}
+
+function isRealBusinessSite(url: string): boolean {
+  if (!url.startsWith('http')) return false;
+  if (isAggregator(url)) return false;
+  // Exclude social media and known platforms
+  const blocked = ['linkedin.com', 'twitter.com', 'x.com', 'instagram.com', 'tiktok.com', 'youtube.com', 'reddit.com', 'quora.com', 'pinterest.com'];
+  return !blocked.some(b => url.includes(b));
+}
+
+async function extractRealWebsiteFromAggregator(url: string, title: string): Promise<string | null> {
+  const html = await fetchHTML(url, 10000);
+  if (!html) return null;
+
+  // Yelp: look for the business website link
+  // Usually in a link with text "Website" or class containing "website"
+  const websiteMatch = html.match(/href="(https?:\/\/[^"]+)"[^>]*>(?:\s*<[^>]+>)*\s*(?:Website|Visit Website|Official Site)/i);
+  if (websiteMatch) return websiteMatch[1];
+
+  // BBB: look for business website
+  const bbbMatch = html.match(/href="(https?:\/\/[^"]+)"[^>]*class="[^"]*website/i);
+  if (bbbMatch) return bbbMatch[1];
+
+  // Thumbtack/Angi: look for external links
+  const externalMatch = html.match(/href="(https?:\/\/[^"]+)"[^>]*target="_blank"/i);
+  if (externalMatch && isRealBusinessSite(externalMatch[1])) return externalMatch[1];
+
+  // Generic: look for any link that looks like a business website
+  const allLinks = Array.from(html.matchAll(/href="(https?:\/\/[^"]+)"/g));
+  for (const match of allLinks) {
+    const link = match[1];
+    if (isRealBusinessSite(link)) return link;
+  }
+
+  return null;
+}
+
+async function searchDuckDuckGo(
   query: string,
   city: string,
   maxResults: number
-): Promise<Array<{ title: string; url: string | null; snippet: string }>> {
+): Promise<Array<{ title: string; url: string | null; isAggregator: boolean }>> {
   const searchQuery = `${query} ${city}`;
   console.log(`\nSearching: "${searchQuery}"`);
 
-  await page.goto(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`, {
-    waitUntil: 'domcontentloaded',
-    timeout: 30000
-  });
+  const html = await fetchHTML(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQuery)}`);
+  if (!html) {
+    console.log('  Failed to fetch results');
+    return [];
+  }
 
-  // Wait for results to load
-  await delay(3000);
+  const results: Array<{ title: string; url: string | null; isAggregator: boolean }> = [];
 
-  // Extract search results
-  const results = await page.evaluate(() => {
-    const items: Array<{ title: string; url: string | null; snippet: string }> = [];
-    const resultElements = document.querySelectorAll('div.g, div[data-async-context] .g');
-
-    resultElements.forEach(el => {
-      const titleEl = el.querySelector('h3');
-      const linkEl = el.querySelector('a[href^="http"]');
-      const snippetEl = el.querySelector('div.VwiC3b, span.aCOpRe');
-
-      if (titleEl && linkEl) {
-        items.push({
-          title: titleEl.textContent?.trim() || '',
-          url: linkEl.getAttribute('href'),
-          snippet: snippetEl?.textContent?.trim() || ''
-        });
+  // Parse DuckDuckGo HTML results
+  const linkRegex = /<a[^>]*class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g;
+  let match;
+  while ((match = linkRegex.exec(html)) !== null && results.length < maxResults * 2) {
+    let url = match[1];
+    if (url.startsWith('/')) {
+      const redirectMatch = url.match(/uddg=([^&]+)/);
+      if (redirectMatch) {
+        url = decodeURIComponent(redirectMatch[1]);
       }
-    });
+    }
+    const title = match[2].replace(/<[^>]+>/g, '').trim();
 
-    return items;
+    if (url && url.startsWith('http')) {
+      results.push({
+        title,
+        url,
+        isAggregator: isAggregator(url)
+      });
+    }
+  }
+
+  console.log(`  Found ${results.length} raw results`);
+  return results;
+}
+
+async function hasContactForm(url: string): Promise<{ hasForm: boolean; formUrl: string | null }> {
+  const html = await fetchHTML(url, 10000);
+  if (!html) return { hasForm: false, formUrl: null };
+
+  const indicators = [
+    'form[action*="contact"]', 'form[action*="submit"]', 'input[type="email"]',
+    'textarea', 'button[type="submit"]', '.contact-form', '#contact-form',
+    'form#contact', 'input[name*="name"]', 'input[name*="phone"]'
+  ];
+
+  const hasForm = indicators.some(selector => {
+    return html.includes(selector) || (html.toLowerCase().includes('contact') && html.toLowerCase().includes('form'));
   });
 
-  // Filter out Google internal links and limit results
-  return results
-    .filter(r => r.url && !r.url.includes('google.com') && !r.url.includes('yelp.com') && !r.url.includes('facebook.com'))
-    .slice(0, maxResults);
-}
+  const contactRegex = /href="([^"]*contact[^"]*)"|href="([^"]*quote[^"]*)"/i;
+  const contactMatch = html.match(contactRegex);
 
-async function hasContactForm(page: Page, url: string): Promise<{ hasForm: boolean; formUrl: string | null }> {
-  try {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
-    await delay(2000);
-
-    // Check for common contact form indicators
-    const hasForm = await page.evaluate(() => {
-      const indicators = [
-        'form[action*="contact"]',
-        'form[action*="submit"]',
-        'input[type="email"]',
-        'textarea[name*="message"], textarea[name*=" Message"]',
-        'input[name*="phone"], input[name*="Phone"]',
-        'button[type="submit"], input[type="submit"]',
-        '.contact-form',
-        '#contact-form',
-        'form#contact'
-      ];
-
-      return indicators.some(selector => document.querySelector(selector) !== null);
-    });
-
-    // Look for contact page link
-    const contactUrl = await page.evaluate(() => {
-      const links = Array.from(document.querySelectorAll('a[href*="contact"], a[href*="Contact"]'));
-      const contactLink = links.find(l => {
-        const text = l.textContent?.toLowerCase() || '';
-        return text.includes('contact') || text.includes('quote') || text.includes('get in touch');
-      });
-      return contactLink ? contactLink.getAttribute('href') : null;
-    });
-
-    if (contactUrl && !contactUrl.startsWith('http')) {
+  if (contactMatch) {
+    const contactPath = contactMatch[1] || contactMatch[2];
+    try {
       const baseUrl = new URL(url).origin;
-      return { hasForm: true, formUrl: `${baseUrl}${contactUrl.startsWith('/') ? '' : '/'}${contactUrl}` };
+      return { hasForm: true, formUrl: `${baseUrl}${contactPath.startsWith('/') ? '' : '/'}${contactPath}` };
+    } catch {
+      return { hasForm, formUrl: null };
     }
-
-    return { hasForm, formUrl: contactUrl };
-  } catch {
-    return { hasForm: false, formUrl: null };
   }
+
+  return { hasForm, formUrl: null };
 }
 
-async function extractContactInfo(page: Page, url: string): Promise<{ phone: string | null; email: string | null }> {
-  try {
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
-    await delay(1500);
+async function extractContactInfo(url: string): Promise<{ phone: string | null; email: string | null }> {
+  const html = await fetchHTML(url, 10000);
+  if (!html) return { phone: null, email: null };
 
-    const text = await page.evaluate(() => document.body.innerText);
-    return {
-      phone: extractPhone(text),
-      email: extractEmail(text)
-    };
-  } catch {
-    return { phone: null, email: null };
-  }
+  const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  return {
+    phone: extractPhone(text),
+    email: extractEmail(text)
+  };
 }
 
 async function scrapeCategory(
-  browser: Browser,
   category: string,
   city: string,
   maxResults: number
 ): Promise<BusinessLead[]> {
-  const context = await browser.newContext({
-    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-  });
-  const page = await context.newPage();
   const leads: BusinessLead[] = [];
+  const seenUrls = new Set<string>();
 
   try {
-    const results = await searchGoogle(page, category, city, maxResults);
-    console.log(`Found ${results.length} results for "${category} ${city}"`);
+    const results = await searchDuckDuckGo(category, city, maxResults);
+
+    if (results.length === 0) {
+      console.log('  No results found.');
+      return leads;
+    }
+
+    let realSitesFound = 0;
 
     for (const result of results) {
       if (!result.url) continue;
 
-      console.log(`  Checking: ${result.title} (${result.url})`);
+      let realUrl = result.url;
+      let name = result.title;
 
-      const { hasForm, formUrl } = await hasContactForm(page, result.url);
-      const { phone, email } = await extractContactInfo(page, result.url);
+      // If it's an aggregator, try to extract the real business website
+      if (result.isAggregator) {
+        console.log(`  Aggregator found: ${result.url.substring(0, 60)}... extracting real website...`);
+        const extracted = await extractRealWebsiteFromAggregator(result.url, result.title);
+        if (extracted && isRealBusinessSite(extracted)) {
+          realUrl = extracted;
+          console.log(`    Extracted: ${realUrl.substring(0, 80)}`);
+        } else {
+          console.log(`    Could not extract real website, skipping.`);
+          continue;
+        }
+      }
+
+      // Skip duplicates
+      if (seenUrls.has(realUrl)) continue;
+      seenUrls.add(realUrl);
+
+      console.log(`  Checking: ${name.substring(0, 60)} (${realUrl.substring(0, 60)}...)`);
+
+      const { hasForm, formUrl } = await hasContactForm(realUrl);
+      const { phone, email } = await extractContactInfo(realUrl);
 
       leads.push({
-        name: result.title,
-        website: result.url,
+        name,
+        website: realUrl,
         phone,
         email,
         hasContactForm: hasForm,
         contactFormUrl: formUrl,
         category,
         city,
-        source: 'Google Search'
+        source: 'DuckDuckGo Search'
       });
 
+      realSitesFound++;
       console.log(`    Form: ${hasForm ? 'YES' : 'NO'} | Phone: ${phone || 'N/A'} | Email: ${email || 'N/A'}`);
 
+      if (realSitesFound >= maxResults) break;
+
       // Rate limiting
-      await delay(2000 + Math.random() * 2000);
+      await delay(1500 + Math.random() * 1000);
     }
   } catch (error) {
     console.error(`Error scraping ${category}:`, error);
-  } finally {
-    await context.close();
   }
 
   return leads;
@@ -220,7 +297,7 @@ function saveToCSV(leads: BusinessLead[], filename: string): void {
 }
 
 async function main(): Promise<void> {
-  console.log('=== LeadFast Business Scraper ===\n');
+  console.log('=== LeadFast Business Scraper (Real Websites) ===\n');
 
   const city = await ask('Enter city/region (e.g., "New Jersey" or "Edison NJ"): ');
   const maxResultsInput = await ask('Max results per category (default 10): ');
@@ -264,18 +341,15 @@ async function main(): Promise<void> {
     return;
   }
 
-  console.log(`\nLaunching browser...`);
-  const browser = await chromium.launch({ headless: true });
+  console.log(`\nStarting search (extracting real business websites)...`);
 
   const allLeads: BusinessLead[] = [];
 
   for (const category of selectedCategories) {
     console.log(`\n--- Scraping: ${category} ---`);
-    const leads = await scrapeCategory(browser, category, city, maxResults);
+    const leads = await scrapeCategory(category, city, maxResults);
     allLeads.push(...leads);
   }
-
-  await browser.close();
 
   // Save results
   const timestamp = new Date().toISOString().split('T')[0];
@@ -293,6 +367,10 @@ async function main(): Promise<void> {
   console.log(`With phone: ${withPhone}`);
   console.log(`With email: ${withEmail}`);
   console.log(`\nOutput: ${filename}`);
+
+  if (allLeads.length === 0) {
+    console.log('\n⚠️  No leads found. Try a broader city name like "New Jersey" instead of a specific town.');
+  }
 
   rl.close();
 }

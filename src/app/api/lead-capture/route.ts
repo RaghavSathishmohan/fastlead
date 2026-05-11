@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { withRetry } from '@/lib/retry';
 import { rateLimit } from '@/lib/rate-limit';
 import * as Sentry from '@sentry/nextjs';
+import webpush from 'web-push';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -10,6 +11,14 @@ const googleApiKey = process.env.GOOGLE_AI_API_KEY;
 const resendKey = process.env.RESEND_API_KEY;
 const resendFrom = process.env.RESEND_FROM_EMAIL || 'alerts@leadfast.raghavsathishmohan.com';
 const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.leadfast.raghavsathishmohan.com';
+
+const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+const vapidSubject = process.env.VAPID_SUBJECT || 'mailto:admin@leadfast.raghavsathishmohan.com';
+
+if (vapidPublicKey && vapidPrivateKey) {
+  webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
+}
 
 interface GeminiResponse {
   candidates?: Array<{
@@ -214,6 +223,70 @@ async function sendCustomerReply(
   });
 }
 
+interface PushSubscription {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+}
+
+async function getPushSubscriptions(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  clientId: string
+): Promise<PushSubscription[]> {
+  const { data, error } = await supabase
+    .from('push_subscriptions')
+    .select('endpoint, p256dh, auth')
+    .eq('client_id', clientId);
+
+  if (error || !data) {
+    return [];
+  }
+
+  return data as PushSubscription[];
+}
+
+async function sendPushNotifications(
+  subscriptions: PushSubscription[],
+  lead: ParsedLead,
+  companyName: string,
+  token: string
+): Promise<void> {
+  if (!vapidPublicKey || !vapidPrivateKey || subscriptions.length === 0) {
+    return;
+  }
+
+  const payload = JSON.stringify({
+    title: `New Lead: ${lead.name ?? 'Unknown'}`,
+    body: `${lead.service}${lead.city ? ` in ${lead.city}` : ''} — Urgency: ${lead.urgency}`,
+    tag: `lead-${Date.now()}`,
+    url: `${appUrl}/d/${token}`,
+    actions: [
+      { action: 'open', title: 'View Lead' },
+      { action: 'dismiss', title: 'Dismiss' },
+    ],
+  });
+
+  const results = await Promise.allSettled(
+    subscriptions.map(async (sub) => {
+      await webpush.sendNotification(
+        {
+          endpoint: sub.endpoint,
+          keys: {
+            p256dh: sub.p256dh,
+            auth: sub.auth,
+          },
+        },
+        payload
+      );
+    })
+  );
+
+  const failed = results.filter((r) => r.status === 'rejected');
+  if (failed.length > 0) {
+    Sentry.captureMessage(`${failed.length} push notifications failed`);
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for') || req.ip || 'unknown';
@@ -296,6 +369,16 @@ export async function POST(req: NextRequest) {
       } catch {
         Sentry.captureMessage('Customer reply email failed after retries');
       }
+    }
+
+    // Send push notifications to subscribed devices
+    try {
+      const subscriptions = await getPushSubscriptions(supabase, client.id);
+      if (subscriptions.length > 0) {
+        await sendPushNotifications(subscriptions, parsed, client.company_name, token);
+      }
+    } catch {
+      Sentry.captureMessage('Push notification sending failed');
     }
 
     return NextResponse.json({

@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { LeadList } from '@/components/dashboard/LeadList';
 import { PaymentGate } from '@/components/dashboard/PaymentGate';
+import { PushNotificationToggle } from '@/components/dashboard/PushNotificationToggle';
+import { ServiceWorkerRegister } from '@/components/dashboard/ServiceWorkerRegister';
 import { Phone, Mail, Building2 } from 'lucide-react';
 import { Client, Lead } from '@/lib/types';
 
@@ -65,6 +67,7 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
 
   return (
     <div className="min-h-dvh max-w-lg mx-auto px-4 py-6 space-y-6">
+      <ServiceWorkerRegister />
       <header className="space-y-1">
         <div className="flex items-center gap-2.5">
           <img src="/logo-icon.svg" alt="" className="w-8 h-8" />
@@ -120,6 +123,8 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
             Live updates
           </span>
         </div>
+
+        <PushNotificationToggle token={client.token} />
       </section>
 
       <LeadList clientId={client.id} initialLeads={leads} />
