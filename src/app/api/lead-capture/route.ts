@@ -44,15 +44,28 @@ function getSupabaseAdmin() {
   return createClient(supabaseUrl, serviceKey);
 }
 
-function extractTokenAndText(body: unknown): { token: string; rawText: string } {
+function resolveSiteKey(siteKey: string): string | null {
+  try {
+    const map = JSON.parse(process.env.SITE_TOKEN_MAP || '{}') as Record<string, string>;
+    return map[siteKey] || null;
+  } catch {
+    return null;
+  }
+}
+
+function extractTokenAndText(body: unknown): { token: string; rawText: string; error?: string } {
   const input = body as Record<string, unknown>;
 
-  const token =
-    typeof input.token === 'string'
-      ? input.token
-      : typeof input.query === 'object' && input.query !== null
-        ? (input.query as Record<string, unknown>).token as string
-        : '';
+  let token = '';
+  if (typeof input.token === 'string') {
+    token = input.token;
+  } else if (typeof input.site_key === 'string') {
+    const resolved = resolveSiteKey(input.site_key);
+    if (!resolved) return { token: '', rawText: '', error: 'Unknown site_key' };
+    token = resolved;
+  } else if (typeof input.query === 'object' && input.query !== null) {
+    token = (input.query as Record<string, unknown>).token as string;
+  }
 
   let rawText = '';
   if (typeof input.body === 'string') {
@@ -328,7 +341,11 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { token, rawText } = extractTokenAndText(body);
+    const { token, rawText, error: tokenError } = extractTokenAndText(body);
+
+    if (tokenError) {
+      return NextResponse.json({ error: tokenError }, { status: 400 });
+    }
 
     if (!token) {
       return NextResponse.json({ error: 'Missing token' }, { status: 400 });
