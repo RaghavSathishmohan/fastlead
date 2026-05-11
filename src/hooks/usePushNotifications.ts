@@ -1,21 +1,36 @@
+'use client';
+
 import { useState, useEffect, useCallback } from 'react';
 
 interface PushSubscriptionState {
   isSupported: boolean;
   isSubscribed: boolean;
   isLoading: boolean;
+  isSafariIOS: boolean;
   error: string | null;
 }
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/\\-/g, '+').replace(/\\_/g, '/');
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
   for (let i = 0; i < rawData.length; i++) {
     outputArray[i] = rawData.charCodeAt(i);
   }
   return outputArray;
+}
+
+function isIOSSafari(): boolean {
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua);
+  const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|FxiOS/.test(ua);
+  return isIOS && isSafari;
+}
+
+function isStandalonePWA(): boolean {
+  return window.matchMedia('(display-mode: standalone)').matches ||
+    (navigator as unknown as { standalone?: boolean }).standalone === true;
 }
 
 export function usePushNotifications(token: string): {
@@ -27,13 +42,32 @@ export function usePushNotifications(token: string): {
     isSupported: false,
     isSubscribed: false,
     isLoading: true,
+    isSafariIOS: false,
     error: null,
   });
 
-  const [subscription, setSubscription] = useState<PushSubscription | null>(null);
-
   useEffect(() => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+      setState((s) => ({ ...s, isSupported: false, isLoading: false }));
+      return;
+    }
+
+    const safariIOS = isIOSSafari();
+    const standalone = isStandalonePWA();
+
+    // iOS Safari only supports push in standalone PWA mode
+    if (safariIOS && !standalone) {
+      setState({
+        isSupported: false,
+        isSubscribed: false,
+        isLoading: false,
+        isSafariIOS: true,
+        error: null,
+      });
+      return;
+    }
+
+    if (!('PushManager' in window)) {
       setState((s) => ({ ...s, isSupported: false, isLoading: false }));
       return;
     }
@@ -47,11 +81,11 @@ export function usePushNotifications(token: string): {
 
         if (cancelled) return;
 
-        setSubscription(existingSub);
         setState({
           isSupported: true,
           isSubscribed: !!existingSub,
           isLoading: false,
+          isSafariIOS: false,
           error: null,
         });
       } catch (err) {
@@ -60,6 +94,7 @@ export function usePushNotifications(token: string): {
           ...s,
           isSupported: true,
           isLoading: false,
+          isSafariIOS: false,
           error: err instanceof Error ? err.message : 'Failed to check subscription',
         }));
       }
@@ -85,9 +120,10 @@ export function usePushNotifications(token: string): {
           throw new Error('VAPID public key not configured');
         }
 
+        const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
         sub = await registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as unknown as ArrayBuffer,
+          applicationServerKey: applicationServerKey as unknown as ArrayBuffer,
         });
       }
 
@@ -116,11 +152,11 @@ export function usePushNotifications(token: string): {
         throw new Error(data.error || 'Failed to save subscription');
       }
 
-      setSubscription(sub);
       setState({
         isSupported: true,
         isSubscribed: true,
         isLoading: false,
+        isSafariIOS: false,
         error: null,
       });
     } catch (err) {
@@ -152,11 +188,11 @@ export function usePushNotifications(token: string): {
         });
       }
 
-      setSubscription(null);
       setState({
         isSupported: true,
         isSubscribed: false,
         isLoading: false,
+        isSafariIOS: false,
         error: null,
       });
     } catch (err) {

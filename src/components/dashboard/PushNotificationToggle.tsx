@@ -1,7 +1,7 @@
 'use client';
 
 import { usePushNotifications } from '@/hooks/usePushNotifications';
-import { Bell, BellOff, Loader2 } from 'lucide-react';
+import { Bell, BellOff, Loader2, Smartphone, AlertCircle } from 'lucide-react';
 
 interface PushNotificationToggleProps {
   token: string;
@@ -10,10 +10,27 @@ interface PushNotificationToggleProps {
 export function PushNotificationToggle({ token }: PushNotificationToggleProps) {
   const { state, subscribe, unsubscribe } = usePushNotifications(token);
 
+  if (state.isSafariIOS) {
+    return (
+      <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 space-y-2">
+        <div className="flex items-start gap-2">
+          <Smartphone className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-amber-400">Add to Home Screen for push alerts</p>
+            <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
+              Safari on iPhone requires this page to be installed as an app. Tap the share button in Safari, then "Add to Home Screen." Open the app icon and enable push alerts there.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!state.isSupported) {
     return (
-      <div className="text-xs text-[var(--color-text-secondary)]">
-        Push notifications not supported on this device
+      <div className="text-xs text-[var(--color-text-secondary)] inline-flex items-center gap-1.5">
+        <AlertCircle className="w-3 h-3" />
+        Push notifications not supported on this browser
       </div>
     );
   }
@@ -23,6 +40,21 @@ export function PushNotificationToggle({ token }: PushNotificationToggleProps) {
       <div className="inline-flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)]">
         <Loader2 className="w-3 h-3 animate-spin" />
         Checking push status...
+      </div>
+    );
+  }
+
+  if (state.error) {
+    return (
+      <div className="space-y-2">
+        <button
+          onClick={subscribe}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-elevated)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] text-xs font-medium transition-all"
+        >
+          <Bell className="w-3 h-3" />
+          Enable push alerts
+        </button>
+        <p className="text-xs text-red-400">{state.error}</p>
       </div>
     );
   }
@@ -52,7 +84,8 @@ export function PushNotificationToggle({ token }: PushNotificationToggleProps) {
     <button
       onClick={subscribe}
       disabled={state.isLoading}
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-elevated)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] text-xs font-medium transition-all">
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--color-elevated)] border border-[var(--color-border)] hover:border-[var(--color-border-strong)] text-xs font-medium transition-all"
+    >
       <Bell className="w-3 h-3" />
       Enable push alerts
     </button>
