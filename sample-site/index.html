@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smith & Sons Contracting — Free Estimate</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0a0a;
+      color: #e5e5e5;
+      line-height: 1.6;
+    }
+    .container { max-width: 600px; margin: 0 auto; padding: 2rem 1.5rem; }
+    header { text-align: center; padding: 3rem 0; }
+    h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+    .tagline { color: #888; font-size: 1.05rem; }
+    .services {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      margin: 2rem 0;
+    }
+    .service {
+      background: #161616;
+      border: 1px solid #262626;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    form {
+      background: #161616;
+      border: 1px solid #262626;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-top: 2rem;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-bottom: 0.35rem;
+      color: #ccc;
+    }
+    input, select, textarea {
+      width: 100%;
+      background: #0a0a0a;
+      border: 1px solid #333;
+      border-radius: 0.5rem;
+      padding: 0.75rem;
+      color: #e5e5e5;
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+      outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: #f59e0b; }
+    button[type="submit"] {
+      width: 100%;
+      background: #f59e0b;
+      color: #0a0a0a;
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0.9rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button[type="submit"]:hover { background: #d97706; }
+    button[type="submit"]:disabled { opacity: 0.5; cursor: not-allowed; }
+    .result {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.9rem;
+      display: none;
+    }
+    .result.success { background: #064e3b; border: 1px solid #065f46; color: #6ee7b7; display: block; }
+    .result.error { background: #450a0a; border: 1px solid #7f1d1d; color: #fca5a5; display: block; }
+    .token-input {
+      background: #1a1a1a;
+      border: 1px dashed #444;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .token-input label { color: #f59e0b; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Smith & Sons Contracting</h1>
+      <p class="tagline">Roofing, Renovations & Repairs — Serving NJ Since 1998</p>
+    </header>
+
+    <div class="services">
+      <div class="service">Roof Repair</div>
+      <div class="service">Kitchen Remodel</div>
+      <div class="service">Bathroom Renovation</div>
+      <div class="service">Deck Building</div>
+      <div class="service">Siding</div>
+      <div class="service">General Repairs</div>
+    </div>
+
+    <form id="leadForm">
+      <label for="name">Full Name</label>
+      <input type="text" id="name" name="name" placeholder="John Doe" required>
+
+      <label for="phone">Phone</label>
+      <input type="tel" id="phone" name="phone" placeholder="(555) 123-4567" required>
+
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" placeholder="john@example.com" required>
+
+      <label for="service">Service Needed</label>
+      <select id="service" name="service" required>
+        <option value="">Select a service...</option>
+        <option value="Roof Repair">Roof Repair</option>
+        <option value="Kitchen Remodel">Kitchen Remodel</option>
+        <option value="Bathroom Renovation">Bathroom Renovation</option>
+        <option value="Deck Building">Deck Building</option>
+        <option value="Siding">Siding</option>
+        <option value="General Repairs">General Repairs</option>
+      </select>
+
+      <label for="message">Tell us about your project</label>
+      <textarea id="message" name="message" rows="4" placeholder="My roof is leaking and I need an estimate ASAP..." required></textarea>
+
+      <button type="submit" id="submitBtn">Request Free Estimate</button>
+      <div id="result" class="result"></div>
+    </form>
+  </div>
+
+  <script>
+    const PROXY_URL = 'https://leadfast-b5dvxd5ya-raghavsathishmohans-projects.vercel.app/api/lead-proxy';
+    const SITE_KEY = 'smith-sons'; // friendly public key, maps to real token server-side
+
+    document.getElementById('leadForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      const result = document.getElementById('result');
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      result.className = 'result';
+      result.textContent = '';
+
+      const form = e.target;
+      const payload = {
+        site_key: SITE_KEY,
+        name: form.name.value,
+        phone: form.phone.value,
+        email: form.email.value,
+        service: form.service.value,
+        message: form.message.value,
+      };
+
+      try {
+        const res = await fetch(PROXY_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          result.className = 'result success';
+          result.innerHTML = `<strong>Lead sent!</strong><br>Status: ${data.lead.status}<br>Check your LeadFast dashboard.`;
+          form.reset();
+        } else {
+          result.className = 'result error';
+          result.textContent = data.error || 'Unknown error';
+        }
+      } catch (err) {
+        result.className = 'result error';
+        result.textContent = 'Network error. Is the LeadFast API online?';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Request Free Estimate';
+      }
+    });
+  </script>
+</body>
+</html>
