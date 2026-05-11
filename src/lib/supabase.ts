@@ -63,6 +63,21 @@ export async function updateLeadStatus(
   return true;
 }
 
+export async function deleteLead(leadId: string): Promise<boolean> {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from('leads')
+    .delete()
+    .eq('id', leadId);
+
+  if (error) {
+    console.error('Error deleting lead:', error);
+    return false;
+  }
+
+  return true;
+}
+
 export function subscribeToLeads(
   clientId: string,
   callback: (lead: Lead) => void

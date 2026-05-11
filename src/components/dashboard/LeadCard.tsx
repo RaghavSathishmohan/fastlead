@@ -2,17 +2,19 @@
 
 import { Lead } from '@/lib/types';
 import { StatusBadge, UrgencyBadge } from './StatusBadge';
-import { Phone, Mail, MapPin, Wrench, Clock, CheckCircle, XCircle, PhoneCall } from 'lucide-react';
-import { updateLeadStatus } from '@/lib/supabase';
+import { Phone, Mail, MapPin, Wrench, Clock, CheckCircle, XCircle, PhoneCall, Trash2 } from 'lucide-react';
+import { updateLeadStatus, deleteLead } from '@/lib/supabase';
 import { useState } from 'react';
 
 interface LeadCardProps {
   lead: Lead;
   onStatusChange: (leadId: string, status: Lead['status']) => void;
+  onDelete: (leadId: string) => void;
 }
 
-export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
+export function LeadCard({ lead, onStatusChange, onDelete }: LeadCardProps) {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleStatusChange = async (status: Lead['status']) => {
     if (isUpdating || lead.status === status) return;
@@ -22,6 +24,19 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
       onStatusChange(lead.id, status);
     }
     setIsUpdating(false);
+  };
+
+  const handleDelete = async () => {
+    if (isDeleting) return;
+    const confirmed = window.confirm(`Delete lead from ${lead.name}? This cannot be undone.`);
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    const success = await deleteLead(lead.id);
+    if (success) {
+      onDelete(lead.id);
+    }
+    setIsDeleting(false);
   };
 
   const timeAgo = (date: string) => {
@@ -104,6 +119,14 @@ export function LeadCard({ lead, onStatusChange }: LeadCardProps) {
           aria-label="Mark as lost"
         >
           <XCircle className="w-4 h-4 text-red-400" />
+        </button>
+        <button
+          onClick={handleDelete}
+          disabled={isDeleting}
+          className="flex items-center justify-center p-2.5 rounded-lg border border-[var(--color-border)] hover:bg-red-500/10 hover:border-red-500/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          aria-label="Delete lead"
+        >
+          <Trash2 className="w-4 h-4 text-red-400" />
         </button>
       </div>
     </article>

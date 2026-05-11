@@ -36,6 +36,10 @@ export function LeadList({ clientId, initialLeads }: LeadListProps) {
     );
   }, []);
 
+  const handleDelete = useCallback((leadId: string) => {
+    setLeads((current) => current.filter((l) => l.id !== leadId));
+  }, []);
+
   // Realtime subscription
   useEffect(() => {
     const unsubscribe = subscribeToLeads(clientId, handleRealtimeUpdate);
@@ -116,6 +120,7 @@ export function LeadList({ clientId, initialLeads }: LeadListProps) {
               key={lead.id}
               lead={lead}
               onStatusChange={handleStatusChange}
+              onDelete={handleDelete}
             />
           ))
         )}

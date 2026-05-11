@@ -76,6 +76,13 @@ CREATE POLICY "leads_update_token"
     WHERE clients.id = leads.client_id
   ));
 
+CREATE POLICY "leads_delete_token"
+  ON leads FOR DELETE
+  USING (EXISTS (
+    SELECT 1 FROM clients
+    WHERE clients.id = leads.client_id
+  ));
+
 -- Realtime publication for leads
 BEGIN;
   DROP PUBLICATION IF EXISTS supabase_realtime;
