@@ -18,20 +18,32 @@ function getSiteTokenMap(): SiteMapping {
   }
 }
 
+function corsResponse(body: Record<string, unknown> | null, status: number) {
+  const res = NextResponse.json(body, { status });
+  res.headers.set('Access-Control-Allow-Origin', '*');
+  res.headers.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.headers.set('Access-Control-Allow-Headers', 'Content-Type');
+  return res;
+}
+
+export async function OPTIONS() {
+  return corsResponse(null, 204);
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { site_key, name, phone, email, service, message } = body;
 
     if (!site_key) {
-      return NextResponse.json({ error: 'Missing site_key' }, { status: 400 });
+      return corsResponse({ error: 'Missing site_key' }, 400);
     }
 
     const map = getSiteTokenMap();
     const clientToken = map[site_key];
 
     if (!clientToken) {
-      return NextResponse.json({ error: 'Unknown site_key' }, { status: 404 });
+      return corsResponse({ error: 'Unknown site_key' }, 404);
     }
 
     const leadBody = [
@@ -49,8 +61,8 @@ export async function POST(req: NextRequest) {
     });
 
     const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    return corsResponse(data, res.status);
   } catch {
-    return NextResponse.json({ error: 'Proxy failed' }, { status: 500 });
+    return corsResponse({ error: 'Proxy failed' }, 500);
   }
 }
