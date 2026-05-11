@@ -27,14 +27,16 @@ export function AdminHealthDashboard() {
   const [health, setHealth] = useState<HealthData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastRefreshed, setLastRefreshed] = useState<number>(0);
 
-  const fetchHealth = useCallback(async () => {
-    setLoading(true);
+  const fetchHealth = useCallback(async (isManual = false) => {
+    if (isManual) setLoading(true);
     setError(null);
     try {
       const res = await fetch('/api/health', { cache: 'no-store' });
       const data = await res.json();
       setHealth(data);
+      setLastRefreshed(Date.now());
     } catch {
       setError('Failed to fetch health status');
     } finally {
@@ -44,7 +46,7 @@ export function AdminHealthDashboard() {
 
   useEffect(() => {
     fetchHealth();
-    const interval = setInterval(fetchHealth, 30000);
+    const interval = setInterval(() => fetchHealth(), 30000);
     return () => clearInterval(interval);
   }, [fetchHealth]);
 
@@ -65,20 +67,21 @@ export function AdminHealthDashboard() {
             <div className="text-xs text-[var(--color-text-tertiary)]">
               {health && (
                 <>
-                  {healthyCount}/{totalCount} services healthy · Checked{' '}
-                  {new Date(health.timestamp).toLocaleTimeString()}
+                  {healthyCount}/{totalCount} services healthy ·{' '}
+                  {Date.now() - lastRefreshed < 60000
+                    ? 'Checked just now'
+                    : `Checked ${new Date(health.timestamp).toLocaleTimeString()}`}
                 </>
               )}
             </div>
           </div>
         </div>
         <button
-          onClick={fetchHealth}
-          disabled={loading}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-elevated)] border border-[var(--color-border)] text-xs font-medium hover:border-[var(--color-border-strong)] transition-colors disabled:opacity-50"
+          onClick={() => fetchHealth(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-elevated)] border border-[var(--color-border)] text-xs font-medium hover:border-[var(--color-border-strong)] transition-colors"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
+          {loading ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
 

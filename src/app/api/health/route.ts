@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import webpush from 'web-push';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const CHECKPOINTS = {
   supabase: process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
   stripe: process.env.STRIPE_SECRET_KEY,
