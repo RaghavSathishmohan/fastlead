@@ -20,7 +20,7 @@ const services = [
   { key: 'stripe', label: 'Stripe Payments', icon: CreditCard },
   { key: 'gemini', label: 'Gemini AI', icon: Brain },
   { key: 'vapid', label: 'Push Notifications', icon: Bell },
-  { key: 'n8n', label: 'n8n Webhook', icon: Workflow },
+  { key: 'n8n', label: 'Lead Capture Endpoint', icon: Workflow },
 ];
 
 export function AdminHealthDashboard() {

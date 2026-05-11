@@ -101,28 +101,24 @@ export async function GET() {
     checks.vapid = { ok: false, detail: 'Invalid VAPID key format' };
   }
 
-  // Check n8n webhook endpoint
+  // Check lead capture endpoint (what n8n calls into)
   try {
-    if (CHECKPOINTS.n8n) {
-      const webhookUrl = `${CHECKPOINTS.n8n}/api/health`;
-      const res = await fetch(webhookUrl, {
-        method: 'HEAD',
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+    if (appUrl) {
+      const res = await fetch(`${appUrl}/api/lead-capture`, {
+        method: 'GET',
         signal: AbortSignal.timeout(5000),
       });
+      // GET returns 400 (missing token/body) or 405 — both mean the endpoint is live
       checks.n8n = { ok: res.status < 500 };
       if (!checks.n8n.ok) {
         checks.n8n.detail = `HTTP ${res.status}`;
       }
     } else {
-      // Fallback: try the app's own lead-capture endpoint as a proxy
-      const res = await fetch(`${CHECKPOINTS.n8n || ''}/api/lead-capture`, {
-        method: 'HEAD',
-        signal: AbortSignal.timeout(5000),
-      });
-      checks.n8n = { ok: res.status < 500 };
+      checks.n8n = { ok: false, detail: 'Missing NEXT_PUBLIC_APP_URL' };
     }
   } catch {
-    checks.n8n = { ok: false, detail: 'Connection timeout or unreachable' };
+    checks.n8n = { ok: false, detail: 'Connection timeout' };
   }
 
   for (const s of Object.values(checks)) {
