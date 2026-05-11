@@ -38,7 +38,6 @@ export async function getLeadsByClient(clientId: string): Promise<Lead[]> {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching leads:', error);
     return [];
   }
 
