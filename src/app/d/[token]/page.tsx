@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
-import { LeadList } from '@/components/dashboard/LeadList';
+import { DashboardTabs } from '@/components/dashboard/DashboardTabs';
 import { PaymentGate } from '@/components/dashboard/PaymentGate';
 import { PushNotificationToggle } from '@/components/dashboard/PushNotificationToggle';
 import { ServiceWorkerRegister } from '@/components/dashboard/ServiceWorkerRegister';
@@ -126,7 +126,7 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
         <PushNotificationToggle token={client.token} />
       </section>
 
-      <LeadList clientId={client.id} initialLeads={leads} />
+      <DashboardTabs clientId={client.id} leads={leads} />
     </div>
   );
 }

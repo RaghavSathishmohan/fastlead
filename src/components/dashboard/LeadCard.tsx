@@ -2,6 +2,7 @@
 
 import { Lead } from '@/lib/types';
 import { StatusBadge, UrgencyBadge } from './StatusBadge';
+import { LeadNotes } from './LeadNotes';
 import { Phone, Mail, MapPin, Wrench, Clock, CheckCircle, XCircle, PhoneCall, Trash2 } from 'lucide-react';
 import { updateLeadStatus, deleteLead } from '@/lib/supabase';
 import { useState } from 'react';
@@ -10,9 +11,10 @@ interface LeadCardProps {
   lead: Lead;
   onStatusChange: (leadId: string, status: Lead['status']) => void;
   onDelete: (leadId: string) => void;
+  onNotesUpdate: (leadId: string, notes: string | null) => void;
 }
 
-export function LeadCard({ lead, onStatusChange, onDelete }: LeadCardProps) {
+export function LeadCard({ lead, onStatusChange, onDelete, onNotesUpdate }: LeadCardProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -85,6 +87,8 @@ export function LeadCard({ lead, onStatusChange, onDelete }: LeadCardProps) {
           </div>
         )}
       </div>
+
+      <LeadNotes leadId={lead.id} notes={lead.notes} onUpdate={onNotesUpdate} />
 
       <div className="flex items-center gap-2 pt-1">
         {lead.phone && (

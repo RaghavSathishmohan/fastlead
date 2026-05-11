@@ -1,9 +1,12 @@
 'use client';
 
 import { useFormState } from 'react-dom';
-import { authenticateAdmin, deleteClient, AdminResult } from '@/app/actions/admin';
-import { Shield, ExternalLink, Copy, CheckCircle, Trash2, AlertTriangle, Users } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { authenticateAdmin, deleteClient, AdminResult, getAdminStats, getClientDetail, getRecentActivity, ClientDetail as ClientDetailType, ActivityItem } from '@/app/actions/admin';
+import { Shield, ExternalLink, Copy, CheckCircle, Trash2, AlertTriangle, Users, BarChart3, Zap } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { StatsCards } from '@/components/admin/StatsCards';
+import { ClientDetail } from '@/components/admin/ClientDetail';
+import { ActivityFeed } from '@/components/admin/ActivityFeed';
 
 const initialState: AdminResult = { success: false, message: '' };
 
@@ -57,6 +60,10 @@ export default function AdminPage() {
   const [clients, setClients] = useState<AdminResult['clients']>([]);
   const [password, setPassword] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [stats, setStats] = useState<{ totalClients: number; activeClients: number; leadsThisMonth: number; totalLeads: number } | null>(null);
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [clientDetail, setClientDetail] = useState<ClientDetailType | null>(null);
+  const [activeTab, setActiveTab] = useState<'clients' | 'activity'>('clients');
 
   useEffect(() => {
     if (authState.success && authState.clients) {
@@ -70,6 +77,19 @@ export default function AdminPage() {
     }
   }, [deleteState.success, deleteState.clients]);
 
+  // Load stats and activity after auth
+  useEffect(() => {
+    if (!authState.success || !password) return;
+
+    getAdminStats(password)
+      .then(setStats)
+      .catch(() => setStats(null));
+
+    getRecentActivity(password, 20)
+      .then(setActivity)
+      .catch(() => setActivity([]));
+  }, [authState.success, password]);
+
   const handleDelete = (clientId: string) => {
     const formData = new FormData();
     formData.append('password', password);
@@ -77,6 +97,16 @@ export default function AdminPage() {
     deleteAction(formData);
     setDeleteConfirm(null);
   };
+
+  const openClientDetail = useCallback(async (clientId: string) => {
+    if (!password) return;
+    try {
+      const detail = await getClientDetail(password, clientId);
+      if (detail) setClientDetail(detail);
+    } catch {
+      // ignore
+    }
+  }, [password]);
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -121,14 +151,31 @@ export default function AdminPage() {
           </form>
         ) : (
           <div className="space-y-8">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <Users className="w-5 h-5 text-[var(--color-text-secondary)]" />
-                <h1 className="text-2xl font-bold tracking-tight">Clients</h1>
-              </div>
-              <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[var(--color-elevated)] border border-[var(--color-border)] text-xs font-medium text-[var(--color-text-secondary)]">
-                {clients?.length || 0} total
-              </span>
+            {stats && <StatsCards {...stats} />}
+
+            <div className="flex gap-1 bg-[var(--color-elevated)] rounded-xl p-1 w-fit">
+              <button
+                onClick={() => setActiveTab('clients')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === 'clients'
+                    ? 'bg-[var(--color-surface)] text-[var(--color-text)] shadow-sm'
+                    : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
+                }`}
+              >
+                <Users className="w-4 h-4" />
+                Clients
+              </button>
+              <button
+                onClick={() => setActiveTab('activity')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === 'activity'
+                    ? 'bg-[var(--color-surface)] text-[var(--color-text)] shadow-sm'
+                    : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
+                }`}
+              >
+                <Zap className="w-4 h-4" />
+                Activity
+              </button>
             </div>
 
             {deleteState.message && (
@@ -137,18 +184,43 @@ export default function AdminPage() {
               </p>
             )}
 
-            {clients && clients.length > 0 ? (
-              <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl overflow-hidden">
-                <ClientTable
-                  clients={clients}
-                  onDelete={(id, name) => setDeleteConfirm({ id, name })}
-                />
-              </div>
-            ) : (
-              <div className="text-center py-16 text-[var(--color-text-secondary)]">
-                <Users className="w-10 h-10 mx-auto mb-3 opacity-40" />
-                <p>No clients yet.</p>
-              </div>
+            {activeTab === 'clients' && (
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Users className="w-5 h-5 text-[var(--color-text-secondary)]" />
+                    <h2 className="text-xl font-bold tracking-tight">Clients</h2>
+                  </div>
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-[var(--color-elevated)] border border-[var(--color-border)] text-xs font-medium text-[var(--color-text-secondary)]">
+                    {clients?.length || 0} total
+                  </span>
+                </div>
+
+                {clients && clients.length > 0 ? (
+                  <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl overflow-hidden">
+                    <ClientTable
+                      clients={clients}
+                      onDelete={(id, name) => setDeleteConfirm({ id, name })}
+                      onDetail={(id) => openClientDetail(id)}
+                    />
+                  </div>
+                ) : (
+                  <div className="text-center py-16 text-[var(--color-text-secondary)]">
+                    <Users className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                    <p>No clients yet.</p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {activeTab === 'activity' && (
+              <>
+                <div className="flex items-center gap-3">
+                  <BarChart3 className="w-5 h-5 text-[var(--color-text-secondary)]" />
+                  <h2 className="text-xl font-bold tracking-tight">Recent Activity</h2>
+                </div>
+                <ActivityFeed items={activity} />
+              </>
             )}
           </div>
         )}
@@ -160,16 +232,22 @@ export default function AdminPage() {
         onCancel={() => setDeleteConfirm(null)}
         onConfirm={() => deleteConfirm && handleDelete(deleteConfirm.id)}
       />
+
+      {clientDetail && (
+        <ClientDetail client={clientDetail} onClose={() => setClientDetail(null)} />
+      )}
     </div>
   );
 }
 
 function ClientTable({
   clients,
-  onDelete
+  onDelete,
+  onDetail,
 }: {
   clients: NonNullable<AdminResult['clients']>;
   onDelete: (id: string, name: string) => void;
+  onDetail: (id: string) => void;
 }) {
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -198,7 +276,11 @@ function ClientTable({
           {clients.map((client) => {
             const dashboardUrl = `https://app.leadfast.raghavsathishmohan.com/d/${client.token}`;
             return (
-              <tr key={client.id} className="hover:bg-[var(--color-surface-hover)] transition-colors">
+              <tr
+                key={client.id}
+                className="hover:bg-[var(--color-surface-hover)] transition-colors cursor-pointer"
+                onClick={() => onDetail(client.id)}
+              >
                 <td className="py-3.5 px-4 font-medium">{client.name}</td>
                 <td className="py-3.5 px-4">{client.company_name}</td>
                 <td className="py-3.5 px-4">{client.owner_email}</td>
@@ -222,13 +304,17 @@ function ClientTable({
                       href={dashboardUrl}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
                       className="text-brand-500 hover:text-brand-400 inline-flex items-center gap-1.5 font-medium transition-colors"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                       Open
                     </a>
                     <button
-                      onClick={() => copyLink(dashboardUrl, client.token)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        copyLink(dashboardUrl, client.token);
+                      }}
                       className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors p-1 rounded-md hover:bg-[var(--color-surface-hover)]"
                       title="Copy dashboard link"
                     >
@@ -245,7 +331,10 @@ function ClientTable({
                 </td>
                 <td className="py-3.5 px-4">
                   <button
-                    onClick={() => onDelete(client.id, client.name)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(client.id, client.name);
+                    }}
                     className="text-[var(--color-text-secondary)] hover:text-red-400 transition-colors p-1.5 rounded-md hover:bg-red-500/10"
                     title="Delete client"
                   >

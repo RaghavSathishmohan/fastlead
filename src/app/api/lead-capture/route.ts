@@ -154,15 +154,46 @@ ${rawText}`;
   };
 }
 
+async function checkForDuplicate(
+  supabase: ReturnType<typeof getSupabaseAdmin>,
+  clientId: string,
+  email: string | null,
+  phone: string | null
+): Promise<{ id: string } | null> {
+  if (!email && !phone) return null;
+
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  let query = supabase
+    .from('leads')
+    .select('id')
+    .eq('client_id', clientId)
+    .gte('created_at', thirtyDaysAgo)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (email) {
+    query = query.eq('email', email);
+  } else if (phone) {
+    query = query.eq('phone', phone);
+  }
+
+  const { data, error } = await query;
+  if (error || !data || data.length === 0) return null;
+  return data[0] as { id: string };
+}
+
 async function sendOwnerAlertEmail(
   ownerEmail: string,
   companyName: string,
   token: string,
-  lead: ParsedLead
+  lead: ParsedLead,
+  isDuplicate: boolean
 ): Promise<void> {
   if (!resendKey) return;
 
   const dashboardUrl = `${appUrl}/d/${token}`;
+  const subjectPrefix = isDuplicate ? '[DUPLICATE] ' : '';
 
   await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -173,8 +204,8 @@ async function sendOwnerAlertEmail(
     body: JSON.stringify({
       from: `LeadFast <${resendFrom}>`,
       to: ownerEmail,
-      subject: `NEW LEAD: ${lead.name ?? 'Unknown'} — ${lead.service} (${lead.urgency})`,
-      text: `NEW LEAD RECEIVED\n\nName: ${lead.name ?? 'Unknown'}\nPhone: ${lead.phone ?? 'N/A'}\nEmail: ${lead.email ?? 'N/A'}\nService: ${lead.service}\nCity: ${lead.city ?? 'N/A'}\nUrgency: ${lead.urgency}\n\nView in dashboard:\n${dashboardUrl}`,
+      subject: `${subjectPrefix}NEW LEAD: ${lead.name ?? 'Unknown'} — ${lead.service} (${lead.urgency})`,
+      text: `${isDuplicate ? 'DUPLICATE LEAD DETECTED\n\n' : 'NEW LEAD RECEIVED\n\n'}Name: ${lead.name ?? 'Unknown'}\nPhone: ${lead.phone ?? 'N/A'}\nEmail: ${lead.email ?? 'N/A'}\nService: ${lead.service}\nCity: ${lead.city ?? 'N/A'}\nUrgency: ${lead.urgency}\n\nView in dashboard:\n${dashboardUrl}`,
     }),
   });
 }
@@ -323,6 +354,10 @@ export async function POST(req: NextRequest) {
     // Parse with Gemini
     const parsed = await parseWithGemini(rawText);
 
+    // Check for duplicates
+    const duplicateOf = await checkForDuplicate(supabase, client.id, parsed.email, parsed.phone);
+    const isDuplicate = !!duplicateOf;
+
     // Insert lead into Supabase
     const { data: leadRow, error: insertError } = await supabase
       .from('leads')
@@ -334,6 +369,8 @@ export async function POST(req: NextRequest) {
         service: parsed.service,
         city: parsed.city,
         urgency: parsed.urgency,
+        status: isDuplicate ? 'duplicate' : 'new',
+        duplicate_of: duplicateOf?.id ?? null,
         raw_input: rawText,
         owner_notified: true,
         customer_replied: !!parsed.email,
@@ -349,7 +386,7 @@ export async function POST(req: NextRequest) {
     if (client.owner_email) {
       try {
         await withRetry(
-          () => sendOwnerAlertEmail(client.owner_email, client.company_name, token, parsed),
+          () => sendOwnerAlertEmail(client.owner_email, client.company_name, token, parsed, isDuplicate),
           { retries: 3, delay: 500 }
         );
       } catch {

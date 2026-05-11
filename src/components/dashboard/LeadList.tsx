@@ -5,6 +5,7 @@ import { Lead } from '@/lib/types';
 import { LeadCard } from './LeadCard';
 import { subscribeToLeads, getLeadsByClient } from '@/lib/supabase';
 import { Bell, RefreshCw, Filter } from 'lucide-react';
+import { ExportButton } from './ExportButton';
 
 interface LeadListProps {
   clientId: string;
@@ -40,6 +41,12 @@ export function LeadList({ clientId, initialLeads }: LeadListProps) {
     setLeads((current) => current.filter((l) => l.id !== leadId));
   }, []);
 
+  const handleNotesUpdate = useCallback((leadId: string, notes: string | null) => {
+    setLeads((current) =>
+      current.map((l) => (l.id === leadId ? { ...l, notes } : l))
+    );
+  }, []);
+
   // Realtime subscription
   useEffect(() => {
     const unsubscribe = subscribeToLeads(clientId, handleRealtimeUpdate);
@@ -67,7 +74,8 @@ export function LeadList({ clientId, initialLeads }: LeadListProps) {
     new: leads.filter((l) => l.status === 'new').length,
     called: leads.filter((l) => l.status === 'called').length,
     won: leads.filter((l) => l.status === 'won').length,
-    lost: leads.filter((l) => l.status === 'lost').length
+    lost: leads.filter((l) => l.status === 'lost').length,
+    duplicate: leads.filter((l) => l.status === 'duplicate').length
   };
 
   return (
@@ -88,8 +96,9 @@ export function LeadList({ clientId, initialLeads }: LeadListProps) {
         </div>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-        {(['all', 'new', 'called', 'won', 'lost'] as FilterStatus[]).map((status) => (
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 flex-1">
+          {(['all', 'new', 'called', 'won', 'lost', 'duplicate'] as FilterStatus[]).map((status) => (
           <button
             key={status}
             onClick={() => setFilter(status)}
@@ -103,6 +112,8 @@ export function LeadList({ clientId, initialLeads }: LeadListProps) {
             <span className="ml-1.5 text-xs opacity-70">{statusCounts[status]}</span>
           </button>
         ))}
+        </div>
+        <ExportButton leads={leads} filter={filter === 'all' ? 'all' : filter} />
       </div>
 
       <div className="space-y-3">
@@ -121,6 +132,7 @@ export function LeadList({ clientId, initialLeads }: LeadListProps) {
               lead={lead}
               onStatusChange={handleStatusChange}
               onDelete={handleDelete}
+              onNotesUpdate={handleNotesUpdate}
             />
           ))
         )}

@@ -30,8 +30,10 @@ CREATE TABLE IF NOT EXISTS leads (
   service TEXT,
   city TEXT,
   urgency TEXT DEFAULT 'medium' CHECK (urgency IN ('low', 'medium', 'high')),
-  status TEXT DEFAULT 'new' CHECK (status IN ('new', 'called', 'won', 'lost')),
+  status TEXT DEFAULT 'new' CHECK (status IN ('new', 'called', 'won', 'lost', 'duplicate')),
   raw_input TEXT,
+  notes TEXT DEFAULT NULL,
+  duplicate_of UUID REFERENCES leads(id) ON DELETE SET NULL,
   owner_notified BOOLEAN DEFAULT false,
   customer_replied BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -130,6 +132,8 @@ CREATE POLICY "push_sub_delete_token"
 CREATE INDEX IF NOT EXISTS idx_leads_client_id ON leads(client_id);
 CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
 CREATE INDEX IF NOT EXISTS idx_leads_created_at ON leads(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_leads_email ON leads(client_id, email, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_leads_phone ON leads(client_id, phone, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_clients_token ON clients(token);
 CREATE INDEX IF NOT EXISTS idx_push_sub_client_id ON push_subscriptions(client_id);
 

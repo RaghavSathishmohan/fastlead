@@ -6,7 +6,8 @@ const statusConfig: Record<LeadStatus, { label: string; className: string }> = {
   new: { label: 'New', className: 'bg-blue-500/15 text-blue-400 border-blue-500/25' },
   called: { label: 'Called', className: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/25' },
   won: { label: 'Won', className: 'bg-green-500/15 text-green-400 border-green-500/25' },
-  lost: { label: 'Lost', className: 'bg-[var(--color-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)]' }
+  lost: { label: 'Lost', className: 'bg-[var(--color-elevated)] text-[var(--color-text-secondary)] border-[var(--color-border)]' },
+  duplicate: { label: 'Duplicate', className: 'bg-purple-500/15 text-purple-400 border-purple-500/25' }
 };
 
 const urgencyConfig: Record<LeadUrgency, { label: string; className: string }> = {

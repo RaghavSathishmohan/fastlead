@@ -77,6 +77,23 @@ export async function deleteLead(leadId: string): Promise<boolean> {
   return true;
 }
 
+export async function updateLeadNotes(
+  leadId: string,
+  notes: string | null
+): Promise<boolean> {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from('leads')
+    .update({ notes })
+    .eq('id', leadId);
+
+  if (error) {
+    return false;
+  }
+
+  return true;
+}
+
 export function subscribeToLeads(
   clientId: string,
   callback: (lead: Lead) => void
