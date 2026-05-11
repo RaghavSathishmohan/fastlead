@@ -2,11 +2,12 @@
 
 import { useFormState } from 'react-dom';
 import { authenticateAdmin, deleteClient, AdminResult, getAdminStats, getClientDetail, getRecentActivity, ClientDetail as ClientDetailType, ActivityItem } from '@/app/actions/admin';
-import { Shield, ExternalLink, Copy, CheckCircle, Trash2, AlertTriangle, Users, BarChart3, Zap } from 'lucide-react';
+import { Shield, ExternalLink, Copy, CheckCircle, Trash2, AlertTriangle, Users, BarChart3, Zap, Activity } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { StatsCards } from '@/components/admin/StatsCards';
 import { ClientDetail } from '@/components/admin/ClientDetail';
 import { ActivityFeed } from '@/components/admin/ActivityFeed';
+import { AdminHealthDashboard } from '@/components/admin/AdminHealthDashboard';
 
 const initialState: AdminResult = { success: false, message: '' };
 
@@ -63,7 +64,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState<{ totalClients: number; activeClients: number; leadsThisMonth: number; totalLeads: number } | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [clientDetail, setClientDetail] = useState<ClientDetailType | null>(null);
-  const [activeTab, setActiveTab] = useState<'clients' | 'activity'>('clients');
+  const [activeTab, setActiveTab] = useState<'clients' | 'activity' | 'health'>('clients');
 
   useEffect(() => {
     if (authState.success && authState.clients) {
@@ -176,6 +177,17 @@ export default function AdminPage() {
                 <Zap className="w-4 h-4" />
                 Activity
               </button>
+              <button
+                onClick={() => setActiveTab('health')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === 'health'
+                    ? 'bg-[var(--color-surface)] text-[var(--color-text)] shadow-sm'
+                    : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
+                }`}
+              >
+                <Activity className="w-4 h-4" />
+                Health
+              </button>
             </div>
 
             {deleteState.message && (
@@ -222,6 +234,8 @@ export default function AdminPage() {
                 <ActivityFeed items={activity} />
               </>
             )}
+
+            {activeTab === 'health' && <AdminHealthDashboard />}
           </div>
         )}
       </main>

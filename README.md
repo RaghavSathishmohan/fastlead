@@ -1,6 +1,6 @@
 # LeadFast
 
-AI-powered construction lead response system. Instantly captures, parses, and responds to construction leads via email with a live mobile dashboard.
+AI-powered contracting lead response system. Instantly captures, parses, and responds to contracting leads via email with a live mobile dashboard.
 
 ## Architecture
 
